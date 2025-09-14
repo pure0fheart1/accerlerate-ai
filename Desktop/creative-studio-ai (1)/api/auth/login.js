@@ -1,7 +1,7 @@
-import bcryptjs from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
+const bcryptjs = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { z } = require('zod');
+const { createClient } = require('@supabase/supabase-js');
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -46,7 +46,7 @@ const getUserWithPlan = async (userId) => {
   return user;
 };
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
