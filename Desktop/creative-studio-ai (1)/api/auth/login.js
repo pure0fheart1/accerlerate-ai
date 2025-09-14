@@ -1,7 +1,22 @@
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { supabaseAdmin } from '../config/supabase.js';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Missing Supabase environment variables');
+}
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
 
 // Validation schema
 const loginSchema = z.object({

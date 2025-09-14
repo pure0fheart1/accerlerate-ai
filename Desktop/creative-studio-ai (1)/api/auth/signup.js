@@ -1,7 +1,22 @@
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { supabaseAdmin } from '../config/supabase.js';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Missing Supabase environment variables');
+}
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
 
 // Validation schema
 const signupSchema = z.object({
@@ -44,6 +59,16 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Basic environment check
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('Missing environment variables:', {
+      SUPABASE_URL: !!supabaseUrl,
+      SUPABASE_SERVICE_KEY: !!supabaseServiceKey,
+      JWT_SECRET: !!process.env.JWT_SECRET
+    });
+    return res.status(500).json({ error: 'Server configuration error' });
   }
 
   try {
