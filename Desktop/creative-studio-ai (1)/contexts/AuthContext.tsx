@@ -1,7 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType, SubscriptionPlan, PlanFeatures } from '../types';
-import { apiClient } from '../services/api';
+import { authService, profileService, subscriptionService } from '../services/supabase';
+import { Session } from '@supabase/supabase-js';
 import toast from 'react-hot-toast';
+
+// Check if Supabase is properly configured
+const isSupabaseConfigured = () => {
+  return !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -57,44 +63,75 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    // Check for existing token and validate with server
-    const checkAuthStatus = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      console.error('Supabase not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+      toast.error('Application configuration error. Please contact support.');
+      setLoading(false);
+      return;
+    }
 
+    // Get initial session
+    const getInitialSession = async () => {
       try {
-        apiClient.setToken(token);
-        const response = await apiClient.getCurrentUser();
-        setUser(response.user);
+        const initialSession = await authService.getSession();
+        setSession(initialSession);
+
+        if (initialSession?.user) {
+          const appUser = await profileService.buildUserObject(initialSession.user);
+          setUser(appUser);
+        }
       } catch (error) {
-        console.error('Auth check failed:', error);
-        // Clear invalid token
-        apiClient.setToken(null);
-        localStorage.removeItem('user');
+        console.error('Failed to get initial session:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    checkAuthStatus();
+    getInitialSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session);
+      setSession(session);
+
+      if (session?.user) {
+        try {
+          const appUser = await profileService.buildUserObject(session.user);
+          setUser(appUser);
+        } catch (error) {
+          console.error('Failed to build user object:', error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
     setLoading(true);
     try {
-      const response = await apiClient.login(email, password);
+      if (!isSupabaseConfigured()) {
+        toast.error('Application configuration error. Please contact support.');
+        throw new Error('Supabase not configured');
+      }
 
-      // Set token and user
-      apiClient.setToken(response.token);
-      setUser(response.user);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      const { user: supabaseUser, session } = await authService.signIn(email, password);
 
-      toast.success('Successfully logged in!');
+      if (supabaseUser && session) {
+        const appUser = await profileService.buildUserObject(supabaseUser);
+        setUser(appUser);
+        setSession(session);
+        toast.success('Successfully logged in!');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error(error.message || 'Login failed. Please try again.');
@@ -107,14 +144,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const signup = async (email: string, password: string, name: string): Promise<void> => {
     setLoading(true);
     try {
-      const response = await apiClient.signup(email, password, name);
+      if (!isSupabaseConfigured()) {
+        toast.error('Application configuration error. Please contact support.');
+        throw new Error('Supabase not configured');
+      }
 
-      // Set token and user
-      apiClient.setToken(response.token);
-      setUser(response.user);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      const { user: supabaseUser, session } = await authService.signUp(email, password, name);
 
-      toast.success(`Welcome ${name}! Account created successfully.`);
+      if (supabaseUser) {
+        if (session) {
+          // User was automatically signed in (email confirmation disabled)
+          const appUser = await profileService.buildUserObject(supabaseUser);
+          setUser(appUser);
+          setSession(session);
+          toast.success(`Welcome ${name}! Account created successfully.`);
+        } else {
+          // User needs to confirm email
+          toast.success(`Welcome ${name}! Please check your email to confirm your account.`);
+        }
+      }
     } catch (error: any) {
       console.error('Signup error:', error);
       toast.error(error.message || 'Signup failed. Please try again.');
@@ -124,20 +172,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    apiClient.setToken(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('usage');
-    toast.success('Logged out successfully');
+  const logout = async () => {
+    try {
+      await authService.signOut();
+      setUser(null);
+      setSession(null);
+      // Clear any local storage items
+      localStorage.removeItem('usage');
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Error logging out');
+    }
   };
 
-  const updateUser = (updates: Partial<User>) => {
-    if (!user) return;
+  const updateUser = async (updates: Partial<User>) => {
+    if (!user || !session?.user) return;
 
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    try {
+      // Update profile in Supabase
+      const profileUpdates: any = {};
+      if (updates.name) profileUpdates.name = updates.name;
+      if (updates.plan) profileUpdates.plan_id = updates.plan.id;
+      if (updates.stripeCustomerId) profileUpdates.stripe_customer_id = updates.stripeCustomerId;
+      if (updates.stripeSubscriptionId) profileUpdates.stripe_subscription_id = updates.stripeSubscriptionId;
+
+      if (Object.keys(profileUpdates).length > 0) {
+        await profileService.updateProfile(session.user.id, profileUpdates);
+      }
+
+      // Update local state
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      toast.error('Failed to update profile');
+    }
   };
 
   const value: AuthContextType = {
