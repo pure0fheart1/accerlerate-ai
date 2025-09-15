@@ -6,6 +6,8 @@ import { WhiteboardIcon, ImageIcon, GalleryIcon, ListIcon, EditIcon, SettingsIco
 import { Module } from './types.ts';
 import AuthForm from './components/auth/AuthForm.tsx';
 import UserDashboard from './components/UserDashboard.tsx';
+import ErrorBoundary from './components/ErrorBoundary.tsx';
+import ConfigurationError from './components/ConfigurationError.tsx';
 import { Toaster } from 'react-hot-toast';
 
 // Re-introduce React.lazy for performance optimization (code-splitting)
@@ -423,8 +425,19 @@ const AuthenticatedApp: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  // Check if Supabase is properly configured
+  const isSupabaseConfigured = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+  if (!isSupabaseConfigured) {
+    return (
+      <ErrorBoundary>
+        <ConfigurationError />
+      </ErrorBoundary>
+    );
+  }
+
   return (
-    <>
+    <ErrorBoundary>
       <AuthProvider>
         <AuthenticatedApp />
         <Toaster
@@ -439,7 +452,7 @@ const App: React.FC = () => {
           }}
         />
       </AuthProvider>
-    </>
+    </ErrorBoundary>
   );
 };
 
