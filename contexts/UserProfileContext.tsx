@@ -16,6 +16,9 @@ interface UserProfileContextType {
   updateTier: (tier: UserTier) => Promise<boolean>;
   startVipTrial: () => Promise<boolean>;
   checkDailyBonus: () => Promise<boolean>;
+  addFavoritePage: (pageName: string) => Promise<boolean>;
+  removeFavoritePage: (pageName: string) => Promise<boolean>;
+  updateFavoritePages: (favoritePages: string[]) => Promise<boolean>;
 }
 
 const UserProfileContext = createContext<UserProfileContextType | undefined>(undefined);
@@ -162,6 +165,36 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
     return success;
   }, [user, refreshProfile, refreshTransactions]);
 
+  const addFavoritePage = useCallback(async (pageName: string): Promise<boolean> => {
+    if (!user) return false;
+
+    const success = await SmechalsService.addFavoritePage(user.id, pageName);
+    if (success) {
+      await refreshProfile();
+    }
+    return success;
+  }, [user, refreshProfile]);
+
+  const removeFavoritePage = useCallback(async (pageName: string): Promise<boolean> => {
+    if (!user) return false;
+
+    const success = await SmechalsService.removeFavoritePage(user.id, pageName);
+    if (success) {
+      await refreshProfile();
+    }
+    return success;
+  }, [user, refreshProfile]);
+
+  const updateFavoritePages = useCallback(async (favoritePages: string[]): Promise<boolean> => {
+    if (!user) return false;
+
+    const success = await SmechalsService.updateFavoritePages(user.id, favoritePages);
+    if (success) {
+      await refreshProfile();
+    }
+    return success;
+  }, [user, refreshProfile]);
+
   // Load profile when user changes
   useEffect(() => {
     if (!authLoading) {
@@ -209,6 +242,9 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
     updateTier,
     startVipTrial,
     checkDailyBonus,
+    addFavoritePage,
+    removeFavoritePage,
+    updateFavoritePages,
   };
 
   return (

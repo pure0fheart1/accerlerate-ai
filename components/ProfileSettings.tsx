@@ -30,6 +30,7 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ isOpen, onClose }) =>
   const [newEmail, setNewEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   if (!isOpen) return null;
 
@@ -48,6 +49,41 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ isOpen, onClose }) =>
         ...prev,
         [field]: value
       }));
+    }
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Please select an image smaller than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // Convert to base64 for now (in production, you'd upload to a service like Cloudinary)
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        setFormData(prev => ({
+          ...prev,
+          profilePictureUrl: base64
+        }));
+        setUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setUploadingImage(false);
     }
   };
 
@@ -116,29 +152,64 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ isOpen, onClose }) =>
           {/* Profile Picture */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Profile Picture</h3>
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 dark:bg-slate-700 flex items-center justify-center">
-                {formData.profilePictureUrl ? (
-                  <img
-                    src={formData.profilePictureUrl}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <UserIcon className="w-8 h-8 text-gray-500 dark:text-slate-400" />
-                )}
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Profile Picture URL
-                </label>
+            <div className="flex items-start space-x-4">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 dark:bg-slate-700 flex items-center justify-center border-2 border-gray-300 dark:border-slate-600">
+                  {uploadingImage ? (
+                    <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  ) : formData.profilePictureUrl ? (
+                    <img
+                      src={formData.profilePictureUrl}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <UserIcon className="w-8 h-8 text-gray-500 dark:text-slate-400" />
+                  )}
+                </div>
                 <input
-                  type="url"
-                  value={formData.profilePictureUrl}
-                  onChange={(e) => handleInputChange('profilePictureUrl', e.target.value)}
-                  placeholder="https://example.com/profile.jpg"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={uploadingImage}
                 />
+              </div>
+              <div className="flex-1 space-y-3">
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => document.querySelector('input[type="file"]')?.click()}
+                    disabled={uploadingImage}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+                  >
+                    {uploadingImage ? 'Uploading...' : 'Upload Photo'}
+                  </button>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                    Click to upload or drag & drop. Max 5MB. JPG, PNG, GIF supported.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                    Or enter image URL
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.profilePictureUrl}
+                    onChange={(e) => handleInputChange('profilePictureUrl', e.target.value)}
+                    placeholder="https://example.com/profile.jpg"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                {formData.profilePictureUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, profilePictureUrl: '' }))}
+                    className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                  >
+                    Remove Photo
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -149,10 +149,19 @@ import SloganGenerator from './pages/SloganGenerator';
 import Settings from './pages/Settings';
 import Calculator from './pages/Calculator';
 import HandwrittenNotes from './pages/HandwrittenNotes';
+import UserDashboard from './pages/UserDashboard';
+import Whiteboard from './pages/Whiteboard';
+import AIImageEditor from './pages/AIImageEditor';
+import ContactManager from './pages/ContactManager';
+import EnhancedTaskManager from './pages/EnhancedTaskManager';
+import ClockTimerHub from './pages/ClockTimerHub';
+import CryptoPricesTracker from './pages/CryptoPricesTracker';
+import BookmarksManager from './pages/BookmarksManager';
+import BottleCounter from './pages/BottleCounter';
 import { Logo } from './components/Logo';
 import UserProfileWidget from './components/UserProfileWidget';
 
-import { 
+import {
     SparklesIcon, BookOpenIcon, WandIcon, DocumentTextIcon, VideoCameraIcon,
     BriefcaseIcon, CodeBracketIcon, EnvelopeIcon, ShareIcon, CakeIcon, HeartIcon,
     GlobeAltIcon, PencilIcon, UserCircleIcon, LanguageIcon, ClipboardListIcon,
@@ -186,11 +195,11 @@ import {
     BoardGameIdeaGeneratorIcon, ExcuseGeneratorIcon, PersonalizedTriviaGeneratorIcon, EtiquetteAdvisorIcon,
     HomeDeclutteringPlanIcon, SentimentAnalyzerIcon, UserStoryGeneratorIcon, QuizGeneratorIcon, HaikuGeneratorIcon,
     DietaryRecipeIcon, AcronymExplainerIcon, SloganGeneratorIcon, CogIcon, XIcon, CalculatorIcon,
-    StarIcon, StarSolidIcon
+    StarIcon, StarSolidIcon, EditIcon, UserGroupIcon, ClockIcon, CurrencyDollarIcon, BookmarkIcon, BottleIcon
 } from './components/icons';
 import { VoiceProvider } from './contexts/VoiceContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { UserProfileProvider } from './contexts/UserProfileContext';
+import { UserProfileProvider, useUserProfile } from './contexts/UserProfileContext';
 import { UsageTrackingProvider } from './contexts/UsageTrackingContext';
 
 // Shortcut Configuration
@@ -253,6 +262,19 @@ export type Page =
     // New page
     'calculator' |
     'handwritten' |
+    // User dashboard
+    'userdashboard' |
+    // Whiteboard
+    'whiteboard' |
+    // AI Image Editor
+    'aiimageeditor' |
+    // Integrated productivity tools
+    'contactmanager' |
+    'enhancedtaskmanager' |
+    'clocktimerhub' |
+    'cryptoprices' |
+    'bookmarksmanager' |
+    'bottlecounter' |
     // Settings page
     'settings';
 
@@ -262,7 +284,6 @@ const DEFAULT_SIDEBAR_WIDTH = 288; // w-72
 const COLLAPSED_SIDEBAR_WIDTH = 72;
 const SIDEBAR_WIDTH_KEY = 'accelerate-sidebar-width';
 const SIDEBAR_COLLAPSED_KEY = 'accelerate-sidebar-collapsed';
-const FAVORITES_KEY = 'accelerate-favorites';
 
 const navItems = [
     {
@@ -300,6 +321,8 @@ const navItems = [
     {
         group: 'Creative & Writing',
         items: [
+            { id: 'whiteboard', label: 'Interactive Whiteboard', icon: PencilIcon },
+            { id: 'aiimageeditor', label: 'AI Image Editor', icon: EditIcon },
             { id: 'handwritten', label: 'Handwritten Notes', icon: PencilIcon },
             { id: 'blogpost', label: 'Blog Post Writer', icon: NewspaperIcon },
             { id: 'story', label: 'Story Writer', icon: PencilIcon },
@@ -424,6 +447,17 @@ const navItems = [
         ]
     },
     {
+        group: 'Productivity Suite',
+        items: [
+            { id: 'contactmanager', label: 'Contact Manager', icon: UserGroupIcon },
+            { id: 'enhancedtaskmanager', label: 'Enhanced Task Manager', icon: ClipboardListIcon },
+            { id: 'clocktimerhub', label: 'Clock & Timer Hub', icon: ClockIcon },
+            { id: 'bookmarksmanager', label: 'Bookmarks Manager', icon: BookmarkIcon },
+            { id: 'cryptoprices', label: 'Crypto Prices', icon: CurrencyDollarIcon },
+            { id: 'bottlecounter', label: 'Bottle Return Tracker', icon: BottleIcon },
+        ]
+    },
+    {
         group: 'Fun & Utilities',
         items: [
             { id: 'calculator', label: 'Calculator & Converter', icon: CalculatorIcon },
@@ -459,6 +493,7 @@ const navItems = [
     {
         group: 'Application',
         items: [
+            { id: 'userdashboard', label: 'User Dashboard', icon: ChartBarIcon },
             { id: 'settings', label: 'Settings', icon: CogIcon },
         ]
     }
@@ -466,9 +501,19 @@ const navItems = [
 
 const AppContent: React.FC = () => {
     const { user, loading } = useAuth();
+    const { profile, addFavoritePage, removeFavoritePage } = useUserProfile();
     const [activePage, setActivePage] = useState<Page>('generator');
     const [sharedPrompt, setSharedPrompt] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Debug logging
+    useEffect(() => {
+        console.log('Auth State Debug:', {
+            user: user ? { id: user.id, email: user.email } : null,
+            loading,
+            profile: profile ? { id: profile.user_id, email: profile.email } : null
+        });
+    }, [user, loading, profile]);
 
     // Find current tool for header display
     const currentTool = useMemo(() => {
@@ -496,14 +541,8 @@ const AppContent: React.FC = () => {
         } catch { return DEFAULT_SIDEBAR_WIDTH; }
     });
 
-    const [favorites, setFavorites] = useState<Page[]>(() => {
-        try {
-            const stored = localStorage.getItem(FAVORITES_KEY);
-            return stored ? JSON.parse(stored) : [];
-        } catch {
-            return [];
-        }
-    });
+    // Get favorites from user profile instead of localStorage
+    const favorites = profile?.favorite_pages || [];
 
     const [shortcuts, setShortcuts] = useState<Shortcuts>(() => {
         try {
@@ -572,14 +611,26 @@ const AppContent: React.FC = () => {
     }, [shortcuts, user]);
 
 
-    const toggleFavorite = (pageId: Page) => {
-        setFavorites(prev => {
-            const newFavorites = prev.includes(pageId)
-                ? prev.filter(p => p !== pageId)
-                : [...prev, pageId];
-            localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
-            return newFavorites;
-        });
+    const toggleFavorite = async (pageId: Page) => {
+        if (!user) {
+            console.log('Cannot toggle favorite: user not authenticated');
+            return;
+        }
+
+        try {
+            const isFavorite = favorites.includes(pageId);
+            console.log(`Toggling favorite for ${pageId}, currently favorite: ${isFavorite}`);
+
+            if (isFavorite) {
+                const success = await removeFavoritePage(pageId);
+                console.log(`Remove favorite result: ${success}`);
+            } else {
+                const success = await addFavoritePage(pageId);
+                console.log(`Add favorite result: ${success}`);
+            }
+        } catch (error) {
+            console.error('Error in toggleFavorite:', error);
+        }
     };
     
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -807,6 +858,15 @@ const AppContent: React.FC = () => {
             case 'slogan': return <SloganGenerator />;
             case 'calculator': return <Calculator />;
             case 'handwritten': return <HandwrittenNotes onSaveNote={handleSaveNote} />;
+            case 'whiteboard': return <Whiteboard />;
+            case 'aiimageeditor': return <AIImageEditor />;
+            case 'contactmanager': return <ContactManager />;
+            case 'enhancedtaskmanager': return <EnhancedTaskManager />;
+            case 'clocktimerhub': return <ClockTimerHub />;
+            case 'cryptoprices': return <CryptoPricesTracker />;
+            case 'bookmarksmanager': return <BookmarksManager />;
+            case 'bottlecounter': return <BottleCounter />;
+            case 'userdashboard': return <UserDashboard />;
             case 'settings': return <Settings shortcuts={shortcuts} updateShortcuts={updateShortcuts} />;
             default: return <ImageGenerator sharedPrompt={sharedPrompt} setSharedPrompt={setSharedPrompt} />;
         }
@@ -881,13 +941,38 @@ const AppContent: React.FC = () => {
                                         </button>
                                         {!isCollapsed && item.id !== 'settings' && (
                                             <button
-                                                onClick={(e) => {
+                                                onClick={async (e) => {
                                                     e.stopPropagation();
-                                                    toggleFavorite(item.id as Page);
+                                                    try {
+                                                        await toggleFavorite(item.id as Page);
+                                                    } catch (error) {
+                                                        console.error('Error toggling favorite:', error);
+                                                    }
                                                 }}
-                                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-gray-400 dark:text-slate-500 hover:bg-gray-300 dark:hover:bg-slate-600 transition-opacity ${favorites.includes(item.id as Page) ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}
-                                                title={favorites.includes(item.id as Page) ? 'Remove from Favorites' : 'Add to Favorites'}
-                                                aria-label={favorites.includes(item.id as Page) ? `Remove ${item.label} from Favorites` : `Add ${item.label} to Favorites`}
+                                                disabled={!user || loading}
+                                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full transition-opacity ${
+                                                    (!user || loading)
+                                                        ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed'
+                                                        : 'text-gray-400 dark:text-slate-500 hover:bg-gray-300 dark:hover:bg-slate-600'
+                                                } ${favorites.includes(item.id as Page) ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}
+                                                title={
+                                                    loading
+                                                        ? 'Loading...'
+                                                        : !user
+                                                            ? 'Sign in to use favorites'
+                                                            : favorites.includes(item.id as Page)
+                                                                ? 'Remove from Favorites'
+                                                                : 'Add to Favorites'
+                                                }
+                                                aria-label={
+                                                    loading
+                                                        ? 'Loading...'
+                                                        : !user
+                                                            ? 'Sign in to use favorites'
+                                                            : favorites.includes(item.id as Page)
+                                                                ? `Remove ${item.label} from Favorites`
+                                                                : `Add ${item.label} to Favorites`
+                                                }
                                             >
                                                 {favorites.includes(item.id as Page) 
                                                     ? <StarSolidIcon className="h-4 w-4 text-yellow-400" /> 
@@ -920,7 +1005,7 @@ const AppContent: React.FC = () => {
                             {currentTool ? currentTool.label : 'Welcome to Accelerate.ai'}
                         </h1>
                     </div>
-                    <UserProfileWidget />
+                    <UserProfileWidget onNavigate={(page) => setActivePage(page as Page)} />
                 </header>
 
                 {/* Page Content */}

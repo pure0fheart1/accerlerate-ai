@@ -73,8 +73,38 @@ interface SerializableHistoryState {
 // ====================================================================================
 // Constants
 // ====================================================================================
-const COLORS = ['#FFFFFF', '#EF4444', '#F97316', '#EAB308', '#22C55E', '#3B82F6', '#8B5CF6', '#EC4899'];
-const BACKGROUND_COLORS = ['#f1f5f9', '#ffffff', '#f3f4f6', '#fef3c7', '#dcfce7', '#dbeafe', '#e0e7ff', '#fce7f3'];
+// Extended color palettes with full spectrum
+const COLORS = [
+  // Basic colors
+  '#000000', '#FFFFFF', '#808080', '#C0C0C0',
+  // Reds
+  '#FF0000', '#DC143C', '#B22222', '#8B0000',
+  // Oranges
+  '#FFA500', '#FF8C00', '#FF6347', '#FF4500',
+  // Yellows
+  '#FFFF00', '#FFD700', '#FFA500', '#DAA520',
+  // Greens
+  '#00FF00', '#32CD32', '#228B22', '#006400',
+  // Blues
+  '#0000FF', '#4169E1', '#1E90FF', '#87CEEB',
+  // Purples
+  '#800080', '#9370DB', '#8A2BE2', '#4B0082',
+  // Pinks
+  '#FF69B4', '#FF1493', '#C71585', '#DB7093'
+];
+
+const BACKGROUND_COLORS = [
+  // Light backgrounds
+  '#FFFFFF', '#F8F9FA', '#F1F3F4', '#E8F0FE',
+  // Warm backgrounds
+  '#FFF8E1', '#FFF3E0', '#FCE4EC', '#F3E5F5',
+  // Cool backgrounds
+  '#E3F2FD', '#E0F2F1', '#E8F5E8', '#F1F8E9',
+  // Dark backgrounds
+  '#263238', '#37474F', '#455A64', '#546E7A',
+  // Creative backgrounds
+  '#1A1A2E', '#16213E', '#0F3460', '#533A7B'
+];
 const STROKE_SIZES = [2, 5, 10, 20, 40];
 const HANDLE_SIZE = 10;
 const ROTATE_HANDLE_OFFSET = 30;
@@ -323,8 +353,8 @@ const Whiteboard: React.FC = () => {
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
-        // For eraser, use destination-out composite mode
-        if (tool === 'eraser' && isDrawingRef.current && path === currentPathRef.current) {
+        // Handle eraser paths with destination-out composite mode
+        if (path.color === '#ERASER') {
           ctx.globalCompositeOperation = 'destination-out';
           ctx.strokeStyle = 'rgba(0,0,0,1)';
         } else {
@@ -539,7 +569,7 @@ const Whiteboard: React.FC = () => {
 
         currentPathRef.current = {
           points: [{ ...point, pressure }],
-          color: tool === 'eraser' ? 'transparent' : color,
+          color: tool === 'eraser' ? '#ERASER' : color, // Special marker for eraser paths
           strokeWidth: adjustedStrokeWidth,
           baseStrokeWidth: strokeWidth,
           layerId: activeLayerId,
@@ -738,14 +768,41 @@ const Whiteboard: React.FC = () => {
         img.crossOrigin = "anonymous";
         img.src = e.target?.result as string;
         img.onload = () => {
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+
+          // Calculate dimensions to fit the image fullscreen while maintaining aspect ratio
+          const canvasWidth = canvas.width / viewState.scale;
+          const canvasHeight = canvas.height / viewState.scale;
+          const imageAspectRatio = img.width / img.height;
+          const canvasAspectRatio = canvasWidth / canvasHeight;
+
+          let displayWidth, displayHeight;
+          if (imageAspectRatio > canvasAspectRatio) {
+            // Image is wider than canvas - fit to width
+            displayWidth = canvasWidth * 0.9; // 90% of canvas width for some padding
+            displayHeight = displayWidth / imageAspectRatio;
+          } else {
+            // Image is taller than canvas - fit to height
+            displayHeight = canvasHeight * 0.9; // 90% of canvas height for some padding
+            displayWidth = displayHeight * imageAspectRatio;
+          }
+
           const newImage: WhiteboardImage = {
-            id: new Date().toISOString(), element: img, rotation: 0,
-            x: (canvasRef.current!.width / 2 - 150 - viewState.offsetX) / viewState.scale,
-            y: (canvasRef.current!.height / 2 - 150 - viewState.offsetY) / viewState.scale,
-            width: 300, height: (300 * img.height) / img.width,
+            id: new Date().toISOString(),
+            element: img,
+            rotation: 0,
+            x: (canvasWidth - displayWidth) / 2 - viewState.offsetX / viewState.scale,
+            y: (canvasHeight - displayHeight) / 2 - viewState.offsetY / viewState.scale,
+            width: displayWidth,
+            height: displayHeight,
             layerId: activeLayerId,
           };
           recordNewState({ ...currentState, images: [...currentState.images, newImage] });
+
+          // Auto-select the new image for immediate resizing capability
+          setSelectedObject({ id: newImage.id, type: 'image' });
+          setTool('select');
         };
       };
       reader.readAsDataURL(file);
@@ -810,14 +867,28 @@ const Whiteboard: React.FC = () => {
     });
 
     paths.forEach(path => {
-      ctx.beginPath();
-      ctx.strokeStyle = path.color;
-      ctx.lineWidth = path.strokeWidth;
+      if (path.points.length === 0) return;
+
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      if (path.points.length > 0) ctx.moveTo(path.points[0].x, path.points[0].y);
-      for (let i = 1; i < path.points.length; i++) ctx.lineTo(path.points[i].x, path.points[i].y);
+
+      // Handle eraser paths
+      if (path.color === '#ERASER') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+      } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = path.color;
+      }
+
+      ctx.beginPath();
+      ctx.lineWidth = path.strokeWidth;
+      ctx.moveTo(path.points[0].x, path.points[0].y);
+      for (let i = 1; i < path.points.length; i++) {
+        ctx.lineTo(path.points[i].x, path.points[i].y);
+      }
       ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
     });
 
     return offscreenCanvas.toDataURL('image/png');
@@ -1011,13 +1082,13 @@ const Whiteboard: React.FC = () => {
         {/* Colors */}
         <div>
           <h4 className="font-medium mb-3 text-gray-700 dark:text-slate-300 text-sm uppercase tracking-wide">Colors</h4>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-6 gap-1.5 max-h-48 overflow-y-auto">
             {COLORS.map(c => (
               <button
                 key={c}
                 onClick={() => setColor(c)}
                 style={{ backgroundColor: c }}
-                className={`w-10 h-10 rounded-lg border-2 transition-all ${color === c ? 'border-indigo-500 scale-110' : 'border-gray-300 dark:border-slate-600 hover:scale-105'
+                className={`w-8 h-8 rounded-md border-2 transition-all ${color === c ? 'border-indigo-500 scale-110 shadow-md' : 'border-gray-300 dark:border-slate-600 hover:scale-105'
                   }`}
                 aria-label={`Color ${c}`}
               />
@@ -1049,13 +1120,13 @@ const Whiteboard: React.FC = () => {
         {/* Background Colors */}
         <div>
           <h4 className="font-medium mb-3 text-gray-700 dark:text-slate-300 text-sm uppercase tracking-wide">Background</h4>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-1.5 max-h-32 overflow-y-auto">
             {BACKGROUND_COLORS.map(c => (
               <button
                 key={c}
                 onClick={() => setBackgroundColor(c)}
                 style={{ backgroundColor: c }}
-                className={`w-10 h-10 rounded-lg border-2 transition-all ${currentState.backgroundColor === c ? 'border-indigo-500 scale-110' : 'border-gray-300 dark:border-slate-600 hover:scale-105'
+                className={`w-8 h-8 rounded-md border-2 transition-all ${currentState.backgroundColor === c ? 'border-indigo-500 scale-110 shadow-md' : 'border-gray-300 dark:border-slate-600 hover:scale-105'
                   }`}
                 aria-label={`Background ${c}`}
               />

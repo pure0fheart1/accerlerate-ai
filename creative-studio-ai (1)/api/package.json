@@ -1,0 +1,11 @@
+{
+  "name": "creative-studio-api-functions",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.23.8"
+  }
+}

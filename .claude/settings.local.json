@@ -22,7 +22,16 @@
       "Bash(docker mcp:*)",
       "Bash(git add:*)",
       "Read(//c/Users/jamie/Desktop/**)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(ls:*)",
+      "mcp__kapture__new_tab",
+      "mcp__kapture__list_tabs",
+      "mcp__kapture__navigate",
+      "mcp__kapture__screenshot",
+      "mcp__kapture__click"
     ],
     "deny": [],
     "ask": []

@@ -13,9 +13,10 @@ import { getTierColor } from '../constants/tiers';
 
 interface UserProfileWidgetProps {
   className?: string;
+  onNavigate?: (page: string) => void;
 }
 
-const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '' }) => {
+const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', onNavigate }) => {
   const { user, signOut } = useAuth();
   const { profile, transactions, submitToolRequest, updateTier, startVipTrial } = useUserProfile();
   const { stats } = useUsageTracking();
@@ -176,7 +177,7 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '' })
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 z-[9999] max-h-[calc(100vh-5rem)] overflow-y-auto">
+        <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 z-[99999] max-h-[calc(100vh-5rem)] overflow-y-auto">
           {/* Header */}
           <div className="p-4 border-b border-gray-200 dark:border-slate-700">
             <div className="flex items-center space-x-3">
@@ -254,6 +255,19 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '' })
           <div className="p-2">
             <button
               onClick={() => {
+                if (onNavigate) {
+                  onNavigate('userdashboard');
+                }
+                setIsOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors duration-200"
+            >
+              <ChartBarIcon className="w-5 h-5 text-indigo-500" />
+              <span className="text-sm text-gray-700 dark:text-slate-300">User Dashboard</span>
+            </button>
+
+            <button
+              onClick={() => {
                 setIsProfileSettingsOpen(true);
                 setIsOpen(false);
               }}
@@ -279,10 +293,15 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '' })
                 setIsPricingOpen(true);
                 setIsOpen(false);
               }}
-              className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors duration-200"
+              className="w-full flex items-center justify-between px-3 py-3 text-left bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl mb-2"
             >
-              <CrownIcon className="w-5 h-5 text-purple-500" />
-              <span className="text-sm text-gray-700 dark:text-slate-300">Upgrade Plan</span>
+              <div className="flex items-center space-x-3">
+                <CrownIcon className="w-5 h-5 text-white" />
+                <span className="text-sm font-medium text-white">Upgrade Plan</span>
+              </div>
+              <div className="text-xs text-purple-100 font-medium">
+                Premium
+              </div>
             </button>
 
             <button

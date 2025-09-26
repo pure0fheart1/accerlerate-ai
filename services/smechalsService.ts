@@ -13,6 +13,7 @@ export interface UserProfile {
   trial_start_date?: string;
   subscription_status: 'active' | 'inactive' | 'trial' | 'cancelled';
   subscription_end_date?: string;
+  favorite_pages: string[];
   created_at: string;
   updated_at: string;
 }
@@ -65,7 +66,8 @@ export class SmechalsService {
           display_name: displayName,
           tier: 'Free',
           smechals_balance: 0,
-          subscription_status: 'inactive'
+          subscription_status: 'inactive',
+          favorite_pages: []
         })
         .select()
         .single();
@@ -401,6 +403,69 @@ export class SmechalsService {
       return true;
     } catch (error) {
       console.error('Error in checkDailyBonus:', error);
+      return false;
+    }
+  }
+
+  // Update user's favorite pages
+  static async updateFavoritePages(userId: string, favoritePages: string[]): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          favorite_pages: favoritePages,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error updating favorite pages:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in updateFavoritePages:', error);
+      return false;
+    }
+  }
+
+  // Add a page to user's favorites
+  static async addFavoritePage(userId: string, pageName: string): Promise<boolean> {
+    try {
+      const profile = await this.getUserProfile(userId);
+      if (!profile) {
+        console.error('User profile not found');
+        return false;
+      }
+
+      const currentFavorites = profile.favorite_pages || [];
+      if (currentFavorites.includes(pageName)) {
+        return true; // Already in favorites
+      }
+
+      const updatedFavorites = [...currentFavorites, pageName];
+      return await this.updateFavoritePages(userId, updatedFavorites);
+    } catch (error) {
+      console.error('Error in addFavoritePage:', error);
+      return false;
+    }
+  }
+
+  // Remove a page from user's favorites
+  static async removeFavoritePage(userId: string, pageName: string): Promise<boolean> {
+    try {
+      const profile = await this.getUserProfile(userId);
+      if (!profile) {
+        console.error('User profile not found');
+        return false;
+      }
+
+      const currentFavorites = profile.favorite_pages || [];
+      const updatedFavorites = currentFavorites.filter(page => page !== pageName);
+      return await this.updateFavoritePages(userId, updatedFavorites);
+    } catch (error) {
+      console.error('Error in removeFavoritePage:', error);
       return false;
     }
   }

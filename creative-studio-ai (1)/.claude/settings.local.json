@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npx vercel:*)",
+      "mcp__docker-mcp-toolkit__read_file",
+      "Bash(cat:*)",
+      "mcp__kapture__new_tab",
+      "mcp__kapture__navigate",
+      "mcp__kapture__screenshot",
+      "mcp__kapture__click",
+      "mcp__kapture__elements",
+      "mcp__kapture__keypress",
+      "mcp__kapture__close",
+      "mcp__kapture__list_tabs",
+      "mcp__docker-mcp-toolkit__write_file",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npm start)",
+      "Read(//c/Users/jamie/Desktop/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
