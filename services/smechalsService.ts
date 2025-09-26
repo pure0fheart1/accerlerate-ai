@@ -1,0 +1,407 @@
+import { supabase } from '../lib/supabase';
+import { SmechalsTransaction, UserTier } from '../types';
+import { SMECHAL_RATES } from '../constants/tiers';
+
+export interface UserProfile {
+  user_id: string;
+  email: string;
+  display_name: string;
+  tier: UserTier;
+  smechals_balance: number;
+  profile_picture_url?: string;
+  trial_days_left?: number;
+  trial_start_date?: string;
+  subscription_status: 'active' | 'inactive' | 'trial' | 'cancelled';
+  subscription_end_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ToolRequest {
+  id: string;
+  user_id: string;
+  tool_name: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high';
+  status: 'pending' | 'in_progress' | 'completed' | 'rejected';
+  smechals_cost: number;
+  estimated_delivery: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export class SmechalsService {
+  // Get user profile with tier and smechals data
+  static async getUserProfile(userId: string): Promise<UserProfile | null> {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error in getUserProfile:', error);
+      return null;
+    }
+  }
+
+  // Create initial user profile
+  static async createUserProfile(userId: string, email: string): Promise<UserProfile | null> {
+    try {
+      const displayName = email.split('@')[0];
+
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .insert({
+          user_id: userId,
+          email,
+          display_name: displayName,
+          tier: 'Free',
+          smechals_balance: 0,
+          subscription_status: 'inactive'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating user profile:', error);
+        return null;
+      }
+
+      // Give new users initial bonus
+      await this.addSmechals(userId, SMECHAL_RATES.DAILY_FREE_BONUS, 'bonus', 'Welcome bonus');
+
+      return data;
+    } catch (error) {
+      console.error('Error in createUserProfile:', error);
+      return null;
+    }
+  }
+
+  // Add smechals to user balance
+  static async addSmechals(
+    userId: string,
+    amount: number,
+    type: SmechalsTransaction['type'],
+    description: string
+  ): Promise<boolean> {
+    try {
+      // Start a transaction
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('smechals_balance')
+        .eq('user_id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching user profile for smechals update:', profileError);
+        return false;
+      }
+
+      const newBalance = profile.smechals_balance + amount;
+
+      // Update balance
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ smechals_balance: newBalance, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('Error updating smechals balance:', updateError);
+        return false;
+      }
+
+      // Record transaction
+      const { error: transactionError } = await supabase
+        .from('smechals_transactions')
+        .insert({
+          user_id: userId,
+          type,
+          amount,
+          description,
+          balance_after: newBalance
+        });
+
+      if (transactionError) {
+        console.error('Error recording smechals transaction:', transactionError);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in addSmechals:', error);
+      return false;
+    }
+  }
+
+  // Spend smechals
+  static async spendSmechals(
+    userId: string,
+    amount: number,
+    description: string
+  ): Promise<boolean> {
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('smechals_balance')
+        .eq('user_id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching user profile for smechals spending:', profileError);
+        return false;
+      }
+
+      if (profile.smechals_balance < amount) {
+        console.error('Insufficient smechals balance');
+        return false;
+      }
+
+      const newBalance = profile.smechals_balance - amount;
+
+      // Update balance
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ smechals_balance: newBalance, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('Error updating smechals balance:', updateError);
+        return false;
+      }
+
+      // Record transaction
+      const { error: transactionError } = await supabase
+        .from('smechals_transactions')
+        .insert({
+          user_id: userId,
+          type: 'spent',
+          amount: -amount,
+          description,
+          balance_after: newBalance
+        });
+
+      if (transactionError) {
+        console.error('Error recording smechals transaction:', transactionError);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in spendSmechals:', error);
+      return false;
+    }
+  }
+
+  // Get user's smechals transactions
+  static async getTransactions(userId: string, limit = 50): Promise<SmechalsTransaction[]> {
+    try {
+      const { data, error } = await supabase
+        .from('smechals_transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Error fetching smechals transactions:', error);
+        return [];
+      }
+
+      return data.map(transaction => ({
+        id: transaction.id,
+        type: transaction.type,
+        amount: transaction.amount,
+        description: transaction.description,
+        createdAt: new Date(transaction.created_at)
+      }));
+    } catch (error) {
+      console.error('Error in getTransactions:', error);
+      return [];
+    }
+  }
+
+  // Submit tool request
+  static async submitToolRequest(
+    userId: string,
+    toolName: string,
+    description: string,
+    priority: 'low' | 'medium' | 'high'
+  ): Promise<boolean> {
+    try {
+      // Check if user has enough smechals
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('smechals_balance')
+        .eq('user_id', userId)
+        .single();
+
+      if (profileError || profile.smechals_balance < SMECHAL_RATES.TOOL_REQUEST_COST) {
+        return false;
+      }
+
+      // Calculate estimated delivery
+      const estimatedDays = priority === 'high' ? 1 : priority === 'medium' ? 3 : 7;
+      const estimatedDelivery = new Date();
+      estimatedDelivery.setDate(estimatedDelivery.getDate() + estimatedDays);
+
+      // Create tool request
+      const { error: requestError } = await supabase
+        .from('tool_requests')
+        .insert({
+          user_id: userId,
+          tool_name: toolName,
+          description,
+          priority,
+          status: 'pending',
+          smechals_cost: SMECHAL_RATES.TOOL_REQUEST_COST,
+          estimated_delivery: estimatedDelivery.toISOString()
+        });
+
+      if (requestError) {
+        console.error('Error creating tool request:', requestError);
+        return false;
+      }
+
+      // Spend smechals
+      const success = await this.spendSmechals(
+        userId,
+        SMECHAL_RATES.TOOL_REQUEST_COST,
+        `Tool request: ${toolName}`
+      );
+
+      return success;
+    } catch (error) {
+      console.error('Error in submitToolRequest:', error);
+      return false;
+    }
+  }
+
+  // Get user's tool requests
+  static async getToolRequests(userId: string): Promise<ToolRequest[]> {
+    try {
+      const { data, error } = await supabase
+        .from('tool_requests')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching tool requests:', error);
+        return [];
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error in getToolRequests:', error);
+      return [];
+    }
+  }
+
+  // Update user tier
+  static async updateUserTier(userId: string, tier: UserTier): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          tier,
+          subscription_status: tier === 'Free' ? 'inactive' : 'active',
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error updating user tier:', error);
+        return false;
+      }
+
+      // Add tier bonus smechals
+      let bonusAmount = 0;
+      if (tier === 'Member') bonusAmount = SMECHAL_RATES.MONTHLY_MEMBER_BONUS;
+      else if (tier === 'VIP') bonusAmount = SMECHAL_RATES.MONTHLY_VIP_BONUS;
+      else if (tier === 'God-Tier') bonusAmount = SMECHAL_RATES.MONTHLY_GOD_TIER_BONUS;
+
+      if (bonusAmount > 0) {
+        await this.addSmechals(userId, bonusAmount, 'bonus', `${tier} tier upgrade bonus`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in updateUserTier:', error);
+      return false;
+    }
+  }
+
+  // Start VIP trial
+  static async startVipTrial(userId: string): Promise<boolean> {
+    try {
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 3);
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          tier: 'VIP',
+          subscription_status: 'trial',
+          trial_start_date: new Date().toISOString(),
+          trial_days_left: 3,
+          subscription_end_date: trialEndDate.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error starting VIP trial:', error);
+        return false;
+      }
+
+      // Add trial bonus
+      await this.addSmechals(userId, SMECHAL_RATES.VIP_TRIAL_BONUS, 'trial', 'VIP trial bonus');
+
+      return true;
+    } catch (error) {
+      console.error('Error in startVipTrial:', error);
+      return false;
+    }
+  }
+
+  // Check and update daily login bonus
+  static async checkDailyBonus(userId: string): Promise<boolean> {
+    try {
+      // Check if user already received daily bonus today
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data: todayTransactions, error } = await supabase
+        .from('smechals_transactions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('type', 'earned')
+        .like('description', '%Daily login bonus%')
+        .gte('created_at', `${today}T00:00:00.000Z`)
+        .lt('created_at', `${today}T23:59:59.999Z`);
+
+      if (error) {
+        console.error('Error checking daily bonus:', error);
+        return false;
+      }
+
+      if (todayTransactions && todayTransactions.length > 0) {
+        return false; // Already received today
+      }
+
+      // Add daily bonus
+      await this.addSmechals(userId, SMECHAL_RATES.DAILY_FREE_BONUS, 'earned', 'Daily login bonus');
+      return true;
+    } catch (error) {
+      console.error('Error in checkDailyBonus:', error);
+      return false;
+    }
+  }
+}

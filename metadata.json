@@ -1,0 +1,7 @@
+{
+  "name": "Accelerate.ai",
+  "description": "A suite of AI-powered tools, including an image generator, prompt library, and more, designed to accelerate your creative workflow.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

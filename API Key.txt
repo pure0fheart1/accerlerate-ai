@@ -1,0 +1,41 @@
+    API Key
+  anon
+       public
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4Z2ZjYmx0d2xzbWd6cGZqenh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MTQ2NTMsImV4cCI6MjA3NDA5MDY1M30.fyw4dK647cYChX49kESng-4G1flxjamBALLT6FGy-vY
+
+
+
+
+Javascript
+Dart
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = 'https://dxgfcbltwlsmgzpfjzxy.supabase.co'
+const supabaseKey = process.env.SUPABASE_KEY
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+
+
+
+
+service_rolesecret
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4Z2ZjYmx0d2xzbWd6cGZqenh5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODUxNDY1MywiZXhwIjoyMDc0MDkwNjUzfQ.Ald1piE3g4hgJTyMtT7h0ogS-LEsmWiEvQrXSrpoQ5o
+
+Copy
+This key has the ability to bypass Row Level Security. Never share it publicly. If leaked, generate a new JWT secret immediately. Prefer using Secret API keys instead.
+
+
+
+
+
+
+Legacy JWT secret
+5I21i36GGMyyky/kt/WCSjFawDBkbEfMMNWg9ya1aWKPZqAwWltqsKw0t0Ihpg6jnOIR6G6/hbLa3YsidhP1Jw==
+
+Copy
+Used to sign and verify JWTs issued by Supabase Auth.
+
+
+
+

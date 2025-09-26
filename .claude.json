@@ -1,0 +1,218 @@
+{
+  "projectInfo": {
+    "name": "Accelerate.ai",
+    "description": "AI-Powered Productivity Suite - A comprehensive React application with 148+ AI-powered tools designed to accelerate creative and business workflows",
+    "version": "0.0.0",
+    "type": "Web Application",
+    "domain": "Productivity, AI Tools, Creative Suite"
+  },
+  "technology": {
+    "frontend": {
+      "framework": "React 19",
+      "language": "TypeScript",
+      "buildTool": "Vite 6.2.0",
+      "styling": "CSS (custom styling)"
+    },
+    "backend": {
+      "database": "Supabase (PostgreSQL)",
+      "authentication": "Supabase Auth",
+      "realTime": "Supabase Real-time",
+      "apis": "Vercel Serverless Functions"
+    },
+    "aiServices": {
+      "primary": "Google AI Studio (Gemini)",
+      "models": [
+        "Gemini 2.5 Flash (text generation)",
+        "Gemini 2.5 Flash Image Preview (image editing)",
+        "Imagen 4.0 Generate (image generation)"
+      ],
+      "sdk": "@google/genai v1.16.0"
+    },
+    "deployment": {
+      "platform": "Vercel",
+      "framework": "Vite",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist"
+    }
+  },
+  "features": {
+    "coreCapabilities": [
+      "AI Image Generation with Imagen 4.0",
+      "Prompt Library and Polishing System",
+      "148+ Specialized Productivity Tools",
+      "User Authentication and Profiles",
+      "Tier-based Subscription System",
+      "Smechals Virtual Currency",
+      "Usage Tracking and Analytics",
+      "Tool Request System"
+    ],
+    "toolCategories": [
+      "Content Creation (writing, storytelling, scripts)",
+      "Business Tools (plans, analysis, strategies)",
+      "Creative Tools (art, design, characters)",
+      "Educational Tools (tutoring, study guides)",
+      "Code Tools (debugging, documentation, API design)",
+      "Health & Fitness (workout plans, nutrition)",
+      "Travel & Lifestyle (itineraries, recipes)",
+      "Entertainment (games, trivia, stories)"
+    ],
+    "userTiers": [
+      {
+        "name": "Free",
+        "features": ["10 basic tools", "5 generations/day", "Community support"],
+        "smechals": 0,
+        "toolRequests": 0
+      },
+      {
+        "name": "Member",
+        "pricing": "$9.99/month, $99.99/year",
+        "features": ["25+ tools", "50 generations/day", "Priority queue"],
+        "smechals": 50,
+        "toolRequests": 1
+      },
+      {
+        "name": "VIP",
+        "pricing": "$29.99/month, $299.99/year",
+        "features": ["All 50+ tools", "Unlimited generations", "Priority support"],
+        "smechals": 100,
+        "toolRequests": 3,
+        "trial": "3-day free trial"
+      },
+      {
+        "name": "God-Tier",
+        "pricing": "$99.99/month, $999.99/year",
+        "features": ["White-label solution", "Custom integrations", "Dedicated manager"],
+        "smechals": 500,
+        "toolRequests": 10
+      }
+    ]
+  },
+  "architecture": {
+    "fileStructure": {
+      "components/": "Reusable React components (15+ components)",
+      "pages/": "Tool-specific pages (148 individual tools)",
+      "services/": "API integration services (gemini, usage tracking)",
+      "contexts/": "React context providers for state management",
+      "hooks/": "Custom React hooks",
+      "constants/": "Configuration constants (tiers, rates)",
+      "lib/": "Utility libraries",
+      "types.ts": "TypeScript type definitions (300+ lines)"
+    },
+    "keyComponents": [
+      "App.tsx - Main application component with routing",
+      "Modal.tsx - Reusable modal component",
+      "PricingModal.tsx - Subscription tier selection",
+      "ProfileSettings.tsx - User profile management",
+      "ToolCard.tsx - Tool display component"
+    ],
+    "services": [
+      "geminiService.ts - Google AI integration (650+ lines)",
+      "supabase.ts - Database and auth integration",
+      "usageTrackingService.ts - Analytics and usage tracking",
+      "smechalsService.ts - Virtual currency management",
+      "trialService.ts - Trial management system"
+    ]
+  },
+  "database": {
+    "platform": "Supabase (PostgreSQL)",
+    "tables": [
+      "user_profiles - User data and tier information",
+      "smechals_transactions - Virtual currency transactions",
+      "tool_requests - Custom tool development requests",
+      "usage_tracking - Tool usage analytics",
+      "subscription_history - Payment and subscription tracking"
+    ],
+    "features": [
+      "Row Level Security (RLS) policies",
+      "Real-time subscriptions",
+      "Automatic timestamps with triggers",
+      "UUID primary keys",
+      "User dashboard aggregation views"
+    ]
+  },
+  "apis": {
+    "googleAI": {
+      "endpoint": "Google AI Studio",
+      "models": ["gemini-2.5-flash", "imagen-4.0-generate-001"],
+      "capabilities": [
+        "Text generation with system instructions",
+        "Structured JSON responses",
+        "Image generation and editing",
+        "Multi-modal responses (text + image)"
+      ]
+    },
+    "supabase": {
+      "features": [
+        "User authentication",
+        "Real-time database",
+        "Row Level Security",
+        "Storage buckets"
+      ]
+    }
+  },
+  "environment": {
+    "development": {
+      "command": "npm run dev",
+      "port": "5173 (Vite default)",
+      "envFile": ".env.local"
+    },
+    "production": {
+      "platform": "Vercel",
+      "domain": "TBD",
+      "envVars": ["VITE_API_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
+    },
+    "requiredEnvVars": [
+      "VITE_API_KEY - Google AI Studio API key",
+      "VITE_SUPABASE_URL - Supabase project URL",
+      "VITE_SUPABASE_ANON_KEY - Supabase anonymous key"
+    ]
+  },
+  "businessModel": {
+    "monetization": "Freemium SaaS with tier-based subscriptions",
+    "currency": "Smechals (virtual currency for premium features)",
+    "pricing": "Monthly/yearly subscriptions from $9.99 to $99.99",
+    "features": "Tool usage limits, priority processing, custom tool requests"
+  },
+  "development": {
+    "setup": [
+      "Clone repository",
+      "npm install",
+      "Configure .env.local with API keys",
+      "npm run dev"
+    ],
+    "buildProcess": [
+      "npm run build - Vite production build",
+      "Output to dist/ directory",
+      "Deploy to Vercel with automatic builds"
+    ],
+    "codeStyle": [
+      "TypeScript strict mode",
+      "Functional React components with hooks",
+      "Comprehensive type definitions",
+      "Error boundaries and proper error handling"
+    ]
+  },
+  "keyInsights": {
+    "strengths": [
+      "Comprehensive tool suite (148 tools)",
+      "Modern tech stack (React 19, TypeScript)",
+      "Scalable architecture with Supabase",
+      "Sophisticated tier and currency system",
+      "Multiple AI model integration"
+    ],
+    "focusAreas": [
+      "AI-powered productivity and creativity tools",
+      "User experience with tiered subscriptions",
+      "Real-time usage tracking and analytics",
+      "Custom tool request fulfillment system"
+    ]
+  },
+  "notes": [
+    "Project uses Google AI Studio for all AI capabilities",
+    "Supabase handles authentication, database, and real-time features",
+    "Comprehensive type system with 300+ lines of TypeScript definitions",
+    "148 individual tool pages covering diverse use cases",
+    "Sophisticated user tier system with virtual currency (Smechals)",
+    "Built for scalability with serverless architecture"
+  ]
+}
