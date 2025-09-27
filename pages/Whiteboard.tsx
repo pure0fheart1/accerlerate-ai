@@ -14,6 +14,13 @@ interface Path {
   strokeWidth: number;
   baseStrokeWidth?: number; // For pressure sensitivity
   layerId: string;
+  tool?: Tool; // Track which tool created this path
+  shape?: {
+    type: 'rectangle' | 'circle' | 'line' | 'arrow' | 'star' | 'heart';
+    startPoint: Point;
+    endPoint: Point;
+    filled?: boolean;
+  };
 }
 interface WhiteboardImage {
   id: string;
@@ -46,7 +53,7 @@ interface ViewState {
   offsetX: number;
   offsetY: number;
 }
-type Tool = 'pen' | 'eraser' | 'pan' | 'select' | 'text';
+type Tool = 'pen' | 'eraser' | 'pan' | 'select' | 'text' | 'spraycan' | 'rectangle' | 'circle' | 'line' | 'arrow' | 'star' | 'heart' | 'marker' | 'brush';
 interface HistoryState {
   paths: Path[];
   images: WhiteboardImage[];
@@ -126,6 +133,64 @@ const TypeIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) =
 const HandIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24">
     <path d="M13 6c0-1.1-.9-2-2-2s-2 .9-2 2v5H7c-1.1 0-2 .9-2 2v3c0 3.31 2.69 6 6 6s6-2.69 6-6V8c0-1.1-.9-2-2-2s-2 .9-2 2v3h2V8h2v8c0 2.21-1.79 4-4 4s-4-1.79-4-4v-3h2V6z"/>
+  </svg>
+);
+
+const SpraycanIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M12 2C13.1 2 14 2.9 14 4V6H16C17.1 6 18 6.9 18 8V18C18 19.1 17.1 20 16 20H8C6.9 20 6 19.1 6 18V8C6 6.9 6.9 6 8 6H10V4C10 2.9 10.9 2 12 2ZM12 4V6H12V4ZM8 8V18H16V8H8ZM9 10H15V16H9V10ZM11 12V14H13V12H11Z"/>
+    <circle cx="19" cy="4" r="1"/>
+    <circle cx="20" cy="6" r="1"/>
+    <circle cx="22" cy="5" r="1"/>
+  </svg>
+);
+
+const RectangleIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <rect x="3" y="6" width="18" height="12" strokeWidth="2" rx="2"/>
+  </svg>
+);
+
+const CircleIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8" strokeWidth="2"/>
+  </svg>
+);
+
+const LineIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <line x1="4" y1="20" x2="20" y2="4" strokeWidth="2"/>
+  </svg>
+);
+
+const ArrowIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <line x1="4" y1="12" x2="20" y2="12" strokeWidth="2"/>
+    <polyline points="14,6 20,12 14,18" strokeWidth="2"/>
+  </svg>
+);
+
+const StarIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+  </svg>
+);
+
+const HeartIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.04L12 21.35Z"/>
+  </svg>
+);
+
+const MarkerIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M4 20H20V22H4V20ZM17 5V3C17 2.45 16.55 2 16 2H8C7.45 2 7 2.45 7 3V5H4V7H20V5H17ZM15 4V5H9V4H15ZM7 9V19H17V9H7ZM9 11H15V13H9V11ZM9 15H15V17H9V15Z"/>
+  </svg>
+);
+
+const BrushIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M7,14C5.9,14 5,13.1 5,12C5,10.9 5.9,10 7,10C8.1,10 9,10.9 9,12C9,13.1 8.1,14 7,14ZM12.6,5.5C12.4,4.5 11.5,4.1 10.7,4.7L4.8,8.8C4,9.4 3.6,10.3 4.2,11.1L5.3,12.5C5.7,13.1 6.5,13.2 7.1,12.7L13,8.6C13.8,8 14.2,7.1 13.6,6.3L12.6,5.5ZM20.7,7.7L16.3,12.1L11.9,7.7L16.3,3.3C16.7,2.9 17.3,2.9 17.7,3.3L20.7,6.3C21.1,6.7 21.1,7.3 20.7,7.7Z"/>
   </svg>
 );
 
@@ -278,6 +343,162 @@ const Whiteboard: React.FC = () => {
     };
   };
 
+  // Shape drawing functions
+  const drawSpraycan = (ctx: CanvasRenderingContext2D, point: Point, color: string, size: number) => {
+    const numDots = Math.floor(Math.random() * 20) + 10;
+    const radius = size * 2;
+
+    ctx.fillStyle = color;
+    for (let i = 0; i < numDots; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = Math.random() * radius;
+      const x = point.x + Math.cos(angle) * distance;
+      const y = point.y + Math.sin(angle) * distance;
+      const dotSize = Math.random() * (size / 4) + 1;
+
+      ctx.beginPath();
+      ctx.arc(x, y, dotSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+
+  const drawRectangle = (ctx: CanvasRenderingContext2D, start: Point, end: Point, color: string, strokeWidth: number, filled: boolean = false) => {
+    const x = Math.min(start.x, end.x);
+    const y = Math.min(start.y, end.y);
+    const width = Math.abs(end.x - start.x);
+    const height = Math.abs(end.y - start.y);
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWidth;
+
+    if (filled) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, width, height);
+    } else {
+      ctx.strokeRect(x, y, width, height);
+    }
+  };
+
+  const drawCircle = (ctx: CanvasRenderingContext2D, start: Point, end: Point, color: string, strokeWidth: number, filled: boolean = false) => {
+    const centerX = (start.x + end.x) / 2;
+    const centerY = (start.y + end.y) / 2;
+    const radius = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)) / 2;
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWidth;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+
+    if (filled) {
+      ctx.fillStyle = color;
+      ctx.fill();
+    } else {
+      ctx.stroke();
+    }
+  };
+
+  const drawLine = (ctx: CanvasRenderingContext2D, start: Point, end: Point, color: string, strokeWidth: number) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWidth;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+  };
+
+  const drawArrow = (ctx: CanvasRenderingContext2D, start: Point, end: Point, color: string, strokeWidth: number) => {
+    // Draw line
+    drawLine(ctx, start, end, color, strokeWidth);
+
+    // Draw arrowhead
+    const angle = Math.atan2(end.y - start.y, end.x - start.x);
+    const arrowLength = strokeWidth * 3;
+
+    ctx.beginPath();
+    ctx.moveTo(end.x, end.y);
+    ctx.lineTo(
+      end.x - arrowLength * Math.cos(angle - Math.PI / 6),
+      end.y - arrowLength * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.moveTo(end.x, end.y);
+    ctx.lineTo(
+      end.x - arrowLength * Math.cos(angle + Math.PI / 6),
+      end.y - arrowLength * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.stroke();
+  };
+
+  const drawStar = (ctx: CanvasRenderingContext2D, start: Point, end: Point, color: string, strokeWidth: number, filled: boolean = false) => {
+    const centerX = (start.x + end.x) / 2;
+    const centerY = (start.y + end.y) / 2;
+    const radius = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)) / 2;
+    const spikes = 5;
+    const outerRadius = radius;
+    const innerRadius = radius * 0.4;
+
+    ctx.beginPath();
+    for (let i = 0; i < spikes * 2; i++) {
+      const angle = (i * Math.PI) / spikes;
+      const r = i % 2 === 0 ? outerRadius : innerRadius;
+      const x = centerX + Math.cos(angle - Math.PI / 2) * r;
+      const y = centerY + Math.sin(angle - Math.PI / 2) * r;
+
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWidth;
+
+    if (filled) {
+      ctx.fillStyle = color;
+      ctx.fill();
+    } else {
+      ctx.stroke();
+    }
+  };
+
+  const drawHeart = (ctx: CanvasRenderingContext2D, start: Point, end: Point, color: string, strokeWidth: number, filled: boolean = false) => {
+    const centerX = (start.x + end.x) / 2;
+    const centerY = (start.y + end.y) / 2;
+    const size = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)) / 4;
+
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY + size / 2);
+
+    // Left curve
+    ctx.bezierCurveTo(
+      centerX - size, centerY - size / 2,
+      centerX - size * 2, centerY - size / 2,
+      centerX - size / 2, centerY - size
+    );
+
+    // Top left arc
+    ctx.arc(centerX - size / 2, centerY - size / 2, size / 2, Math.PI, 0, false);
+
+    // Top right arc
+    ctx.arc(centerX + size / 2, centerY - size / 2, size / 2, Math.PI, 0, false);
+
+    // Right curve
+    ctx.bezierCurveTo(
+      centerX + size * 2, centerY - size / 2,
+      centerX + size, centerY - size / 2,
+      centerX, centerY + size / 2
+    );
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWidth;
+
+    if (filled) {
+      ctx.fillStyle = color;
+      ctx.fill();
+    } else {
+      ctx.stroke();
+    }
+  };
+
   const getObjectBounds = (obj: WhiteboardImage | TextObject) => {
     const w = obj.width;
     const h = 'height' in obj ? obj.height : obj.fontSize * 1.5;
@@ -362,30 +583,96 @@ const Whiteboard: React.FC = () => {
           ctx.strokeStyle = path.color;
         }
 
-        // If path has pressure data, draw with variable width
-        if (path.baseStrokeWidth && path.points.some(p => p.pressure !== undefined)) {
-          // Draw pressure-sensitive path using multiple segments
-          for (let i = 0; i < path.points.length - 1; i++) {
-            const point = path.points[i];
-            const nextPoint = path.points[i + 1];
-            const pressure = point.pressure || 1;
-            const width = path.baseStrokeWidth * (0.3 + pressure * 0.7);
-
-            ctx.beginPath();
-            ctx.lineWidth = width;
-            ctx.moveTo(point.x, point.y);
-            ctx.lineTo(nextPoint.x, nextPoint.y);
-            ctx.stroke();
+        // Handle different tools
+        if (path.shape) {
+          // Draw shapes
+          const { type, startPoint, endPoint, filled } = path.shape;
+          switch (type) {
+            case 'rectangle':
+              drawRectangle(ctx, startPoint, endPoint, path.color, path.strokeWidth, filled);
+              break;
+            case 'circle':
+              drawCircle(ctx, startPoint, endPoint, path.color, path.strokeWidth, filled);
+              break;
+            case 'line':
+              drawLine(ctx, startPoint, endPoint, path.color, path.strokeWidth);
+              break;
+            case 'arrow':
+              drawArrow(ctx, startPoint, endPoint, path.color, path.strokeWidth);
+              break;
+            case 'star':
+              drawStar(ctx, startPoint, endPoint, path.color, path.strokeWidth, filled);
+              break;
+            case 'heart':
+              drawHeart(ctx, startPoint, endPoint, path.color, path.strokeWidth, filled);
+              break;
           }
-        } else {
-          // Draw regular path
+        } else if (path.tool === 'spraycan') {
+          // Draw spraycan dots
+          path.points.forEach(point => {
+            drawSpraycan(ctx, point, path.color, path.strokeWidth);
+          });
+        } else if (path.tool === 'marker') {
+          // Draw marker with transparency and wider strokes
+          ctx.globalAlpha = 0.6;
+          ctx.lineWidth = path.strokeWidth * 2;
           ctx.beginPath();
-          ctx.lineWidth = path.strokeWidth;
           ctx.moveTo(path.points[0].x, path.points[0].y);
           for (let i = 1; i < path.points.length; i++) {
             ctx.lineTo(path.points[i].x, path.points[i].y);
           }
           ctx.stroke();
+          ctx.globalAlpha = 1;
+        } else if (path.tool === 'brush') {
+          // Draw brush with variable pressure
+          if (path.baseStrokeWidth && path.points.some(p => p.pressure !== undefined)) {
+            for (let i = 0; i < path.points.length - 1; i++) {
+              const point = path.points[i];
+              const nextPoint = path.points[i + 1];
+              const pressure = point.pressure || 1;
+              const width = path.baseStrokeWidth * (0.5 + pressure * 1.5);
+
+              ctx.beginPath();
+              ctx.lineWidth = width;
+              ctx.moveTo(point.x, point.y);
+              ctx.lineTo(nextPoint.x, nextPoint.y);
+              ctx.stroke();
+            }
+          } else {
+            ctx.lineWidth = path.strokeWidth * 1.5;
+            ctx.beginPath();
+            ctx.moveTo(path.points[0].x, path.points[0].y);
+            for (let i = 1; i < path.points.length; i++) {
+              ctx.lineTo(path.points[i].x, path.points[i].y);
+            }
+            ctx.stroke();
+          }
+        } else {
+          // Standard pen drawing
+          if (path.baseStrokeWidth && path.points.some(p => p.pressure !== undefined)) {
+            // Draw pressure-sensitive path using multiple segments
+            for (let i = 0; i < path.points.length - 1; i++) {
+              const point = path.points[i];
+              const nextPoint = path.points[i + 1];
+              const pressure = point.pressure || 1;
+              const width = path.baseStrokeWidth * (0.3 + pressure * 0.7);
+
+              ctx.beginPath();
+              ctx.lineWidth = width;
+              ctx.moveTo(point.x, point.y);
+              ctx.lineTo(nextPoint.x, nextPoint.y);
+              ctx.stroke();
+            }
+          } else {
+            // Draw regular path
+            ctx.beginPath();
+            ctx.lineWidth = path.strokeWidth;
+            ctx.moveTo(path.points[0].x, path.points[0].y);
+            for (let i = 1; i < path.points.length; i++) {
+              ctx.lineTo(path.points[i].x, path.points[i].y);
+            }
+            ctx.stroke();
+          }
         }
         ctx.globalCompositeOperation = 'source-over';
       });
@@ -562,6 +849,9 @@ const Whiteboard: React.FC = () => {
 
       case 'pen':
       case 'eraser':
+      case 'spraycan':
+      case 'marker':
+      case 'brush':
         isDrawingRef.current = true;
         // Use pressure if available (stylus support)
         const pressure = e.pressure || 1;
@@ -569,10 +859,33 @@ const Whiteboard: React.FC = () => {
 
         currentPathRef.current = {
           points: [{ ...point, pressure }],
-          color: tool === 'eraser' ? '#ERASER' : color, // Special marker for eraser paths
+          color: tool === 'eraser' ? '#ERASER' : color,
           strokeWidth: adjustedStrokeWidth,
           baseStrokeWidth: strokeWidth,
           layerId: activeLayerId,
+          tool: tool,
+        };
+        break;
+
+      case 'rectangle':
+      case 'circle':
+      case 'line':
+      case 'arrow':
+      case 'star':
+      case 'heart':
+        isDrawingRef.current = true;
+        currentPathRef.current = {
+          points: [point],
+          color: color,
+          strokeWidth: strokeWidth,
+          layerId: activeLayerId,
+          tool: tool,
+          shape: {
+            type: tool as 'rectangle' | 'circle' | 'line' | 'arrow' | 'star' | 'heart',
+            startPoint: point,
+            endPoint: point,
+            filled: false, // Could be made configurable
+          },
         };
         break;
     }
@@ -595,18 +908,25 @@ const Whiteboard: React.FC = () => {
     }
 
     if (isDrawingRef.current && currentPathRef.current) {
-      // Support pressure-sensitive drawing for stylus
-      const pressure = e.pressure || 1;
-      const adjustedStrokeWidth = strokeWidth * (0.5 + pressure * 0.5);
+      if (currentPathRef.current.shape) {
+        // Update shape end point
+        currentPathRef.current.shape.endPoint = point;
+        redrawCanvas();
+        return;
+      } else {
+        // Support pressure-sensitive drawing for stylus
+        const pressure = e.pressure || 1;
+        const adjustedStrokeWidth = strokeWidth * (0.5 + pressure * 0.5);
 
-      // Update stroke width if pressure changed significantly
-      if (Math.abs(adjustedStrokeWidth - currentPathRef.current.strokeWidth) > 1) {
-        currentPathRef.current.strokeWidth = adjustedStrokeWidth;
+        // Update stroke width if pressure changed significantly
+        if (Math.abs(adjustedStrokeWidth - currentPathRef.current.strokeWidth) > 1) {
+          currentPathRef.current.strokeWidth = adjustedStrokeWidth;
+        }
+
+        currentPathRef.current.points.push({ ...point, pressure });
+        redrawCanvas();
+        return;
       }
-
-      currentPathRef.current.points.push({ ...point, pressure });
-      redrawCanvas();
-      return;
     }
 
     if (!selectedObject || !interactionRef.current) return;
@@ -708,8 +1028,20 @@ const Whiteboard: React.FC = () => {
 
     if (isDrawingRef.current) {
       isDrawingRef.current = false;
-      if (currentPathRef.current && currentPathRef.current.points.length > 1) {
-        recordNewState({ ...currentState, paths: [...currentState.paths, currentPathRef.current] });
+      if (currentPathRef.current) {
+        // For shapes, we need at least a start and end point
+        if (currentPathRef.current.shape) {
+          const { startPoint, endPoint } = currentPathRef.current.shape;
+          const minDistance = 5; // Minimum distance to create a shape
+          const distance = Math.sqrt(Math.pow(endPoint.x - startPoint.x, 2) + Math.pow(endPoint.y - startPoint.y, 2));
+
+          if (distance > minDistance) {
+            recordNewState({ ...currentState, paths: [...currentState.paths, currentPathRef.current] });
+          }
+        } else if (currentPathRef.current.points.length > 1) {
+          // For drawing tools, need multiple points
+          recordNewState({ ...currentState, paths: [...currentState.paths, currentPathRef.current] });
+        }
       }
       currentPathRef.current = null;
     }
@@ -881,13 +1213,56 @@ const Whiteboard: React.FC = () => {
         ctx.strokeStyle = path.color;
       }
 
-      ctx.beginPath();
-      ctx.lineWidth = path.strokeWidth;
-      ctx.moveTo(path.points[0].x, path.points[0].y);
-      for (let i = 1; i < path.points.length; i++) {
-        ctx.lineTo(path.points[i].x, path.points[i].y);
+      // Handle different tools for export
+      if (path.shape) {
+        // Draw shapes
+        const { type, startPoint, endPoint, filled } = path.shape;
+        switch (type) {
+          case 'rectangle':
+            drawRectangle(ctx, startPoint, endPoint, path.color, path.strokeWidth, filled);
+            break;
+          case 'circle':
+            drawCircle(ctx, startPoint, endPoint, path.color, path.strokeWidth, filled);
+            break;
+          case 'line':
+            drawLine(ctx, startPoint, endPoint, path.color, path.strokeWidth);
+            break;
+          case 'arrow':
+            drawArrow(ctx, startPoint, endPoint, path.color, path.strokeWidth);
+            break;
+          case 'star':
+            drawStar(ctx, startPoint, endPoint, path.color, path.strokeWidth, filled);
+            break;
+          case 'heart':
+            drawHeart(ctx, startPoint, endPoint, path.color, path.strokeWidth, filled);
+            break;
+        }
+      } else if (path.tool === 'spraycan') {
+        // Draw spraycan dots
+        path.points.forEach(point => {
+          drawSpraycan(ctx, point, path.color, path.strokeWidth);
+        });
+      } else if (path.tool === 'marker') {
+        // Draw marker with transparency
+        ctx.globalAlpha = 0.6;
+        ctx.lineWidth = path.strokeWidth * 2;
+        ctx.beginPath();
+        ctx.moveTo(path.points[0].x, path.points[0].y);
+        for (let i = 1; i < path.points.length; i++) {
+          ctx.lineTo(path.points[i].x, path.points[i].y);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      } else {
+        // Standard drawing
+        ctx.beginPath();
+        ctx.lineWidth = path.strokeWidth;
+        ctx.moveTo(path.points[0].x, path.points[0].y);
+        for (let i = 1; i < path.points.length; i++) {
+          ctx.lineTo(path.points[i].x, path.points[i].y);
+        }
+        ctx.stroke();
       }
-      ctx.stroke();
       ctx.globalCompositeOperation = 'source-over';
     });
 
@@ -982,7 +1357,13 @@ const Whiteboard: React.FC = () => {
         <div ref={containerRef} className="w-full h-full bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden relative border border-gray-200 dark:border-slate-700">
           <canvas
             ref={canvasRef}
-            className={`w-full h-full ${tool === 'pan' ? 'cursor-grab' : tool === 'select' ? 'cursor-default' : 'cursor-crosshair'}`}
+            className={`w-full h-full ${
+              tool === 'pan' ? 'cursor-grab' :
+              tool === 'select' ? 'cursor-default' :
+              tool === 'text' ? 'cursor-text' :
+              ['rectangle', 'circle', 'line', 'arrow', 'star', 'heart'].includes(tool) ? 'cursor-crosshair' :
+              'cursor-crosshair'
+            }`}
             style={{
               touchAction: 'none',  // Prevent browser touch gestures
               userSelect: 'none',   // Prevent text selection
@@ -1035,46 +1416,122 @@ const Whiteboard: React.FC = () => {
         {/* Tools */}
         <div>
           <h4 className="font-medium mb-3 text-gray-700 dark:text-slate-300 text-sm uppercase tracking-wide">Tools</h4>
-          <div className="grid grid-cols-2 gap-2">
+
+          {/* Basic Tools */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
             <button
               onClick={() => setTool('select')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'select' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'
-                }`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'select' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
             >
               <CursorIcon className="h-4 w-4" />
               Select
             </button>
             <button
               onClick={() => setTool('text')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'text' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'
-                }`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'text' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
             >
               <TypeIcon className="h-4 w-4" />
               Text
             </button>
+          </div>
+
+          {/* Drawing Tools */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
             <button
               onClick={() => setTool('pen')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'pen' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'
-                }`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'pen' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
             >
               <PencilIcon className="h-4 w-4" />
               Pen
             </button>
             <button
+              onClick={() => setTool('brush')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'brush' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
+            >
+              <BrushIcon className="h-4 w-4" />
+              Brush
+            </button>
+            <button
+              onClick={() => setTool('marker')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'marker' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
+            >
+              <MarkerIcon className="h-4 w-4" />
+              Marker
+            </button>
+            <button
+              onClick={() => setTool('spraycan')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'spraycan' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
+            >
+              <SpraycanIcon className="h-4 w-4" />
+              Spray
+            </button>
+          </div>
+
+          {/* Shape Tools */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <button
+              onClick={() => setTool('rectangle')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'rectangle' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
+            >
+              <RectangleIcon className="h-4 w-4" />
+              Rectangle
+            </button>
+            <button
+              onClick={() => setTool('circle')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'circle' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
+            >
+              <CircleIcon className="h-4 w-4" />
+              Circle
+            </button>
+            <button
+              onClick={() => setTool('line')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'line' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
+            >
+              <LineIcon className="h-4 w-4" />
+              Line
+            </button>
+            <button
+              onClick={() => setTool('arrow')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'arrow' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
+            >
+              <ArrowIcon className="h-4 w-4" />
+              Arrow
+            </button>
+          </div>
+
+          {/* Special Shapes */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <button
+              onClick={() => setTool('star')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'star' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
+            >
+              <StarIcon className="h-4 w-4" />
+              Star
+            </button>
+            <button
+              onClick={() => setTool('heart')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'heart' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
+            >
+              <HeartIcon className="h-4 w-4" />
+              Heart
+            </button>
+          </div>
+
+          {/* Utility Tools */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
               onClick={() => setTool('eraser')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'eraser' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'
-                }`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'eraser' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
             >
               <TrashIcon className="h-4 w-4" />
               Eraser
             </button>
             <button
               onClick={() => setTool('pan')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm col-span-2 ${tool === 'pan' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'
-                }`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors text-sm ${tool === 'pan' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300'}`}
             >
               <HandIcon className="h-4 w-4" />
-              Pan & Zoom
+              Pan
             </button>
           </div>
         </div>

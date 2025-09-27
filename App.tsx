@@ -150,7 +150,7 @@ import Settings from './pages/Settings';
 import Calculator from './pages/Calculator';
 import HandwrittenNotes from './pages/HandwrittenNotes';
 import UserDashboard from './pages/UserDashboard';
-import Whiteboard from './pages/Whiteboard';
+import WhiteboardTabs from './components/WhiteboardTabs';
 import AIImageEditor from './pages/AIImageEditor';
 import ContactManager from './pages/ContactManager';
 import EnhancedTaskManager from './pages/EnhancedTaskManager';
@@ -158,6 +158,9 @@ import ClockTimerHub from './pages/ClockTimerHub';
 import CryptoPricesTracker from './pages/CryptoPricesTracker';
 import BookmarksManager from './pages/BookmarksManager';
 import BottleCounter from './pages/BottleCounter';
+import ChatRoom from './pages/ChatRoom';
+import GuidesInfo from './pages/GuidesInfo';
+import Games from './pages/Games';
 import { Logo } from './components/Logo';
 import UserProfileWidget from './components/UserProfileWidget';
 
@@ -227,15 +230,15 @@ export const defaultShortcuts: Shortcuts = {
 export const SHORTCUTS_KEY = 'accelerate-shortcuts';
 // End Shortcut Configuration
 
-export type Page = 
-    'generator' | 'library' | 'polisher' | 'autonotes' | 'video' | 'summarizer' | 
-    'code' | 'email' | 'social' | 'recipe' | 'fitness' | 'travel' | 'story' | 
-    'resume' | 'translator' | 'taskbuilder' | 'wiki' | 'blogpost' | 'adcopy' | 
-    'productdesc' | 'ideagen' | 'coverletter' | 'lessonplan' | 'workout' | 
+export type Page =
+    'generator' | 'library' | 'polisher' | 'autonotes' | 'video' | 'summarizer' |
+    'code' | 'email' | 'social' | 'recipe' | 'fitness' | 'travel' | 'story' |
+    'resume' | 'translator' | 'taskbuilder' | 'wiki' | 'blogpost' | 'adcopy' |
+    'productdesc' | 'ideagen' | 'coverletter' | 'lessonplan' | 'workout' |
     'mealplan' | 'character' | 'domain' | 'aitutor' | 'investment' | 'legal' |
     'debate' | 'gift' | 'speech' | 'dream' | 'negotiation' | 'music' | 'businessplan' |
-    'codeconverter' | 'regex' | 'apidocs' | 'sql' | 'brandname' | 'videoscript' | 
-    'pressrelease' | 'jobdesc' | 'marketresearch' | 'swot' | 'personalstory' | 
+    'codeconverter' | 'regex' | 'apidocs' | 'sql' | 'brandname' | 'videoscript' |
+    'pressrelease' | 'jobdesc' | 'marketresearch' | 'swot' | 'personalstory' |
     'ethical' | 'textadventure' | 'budget' | 'studyguide' | 'research' | 'analogy' |
     'fitnesscoach' | 'dietarylog' | 'itineraryoptimizer' |
     // 30 new pages
@@ -246,10 +249,10 @@ export type Page =
     'interiordesign' | 'tattoo' | 'poetry' | 'recommender' | 'parodywriter' |
     'eventplanner' | 'plantcare' | 'caradvisor' | 'publicspeaking' | 'diyplanner' |
     // 10 new pages
-    'coderefactor' | 'gtmstrategy' | 'contractanalyzer' | 'rephraser' | 'eli5' | 
+    'coderefactor' | 'gtmstrategy' | 'contractanalyzer' | 'rephraser' | 'eli5' |
     'icebreaker' | 'affirmations' | 'conflict' | 'formchecker' | 'recipescaler' |
     // Final 10 pages
-    'gitcommand' | 'elevatorpitch' | 'brandvoice' | 'worldbuilder' | 'mindmap' | 
+    'gitcommand' | 'elevatorpitch' | 'brandvoice' | 'worldbuilder' | 'mindmap' |
     'historicalwhatif' | 'hobbysuggester' | 'textresponder' | 'styleadvisor' | 'astrology' |
     // 30 more
     'apipayload' | 'systemdesign' | 'cloudcost' | 'security' | 'qbr' | 'okr' | 'salesemail' |
@@ -275,6 +278,12 @@ export type Page =
     'cryptoprices' |
     'bookmarksmanager' |
     'bottlecounter' |
+    // Chat room
+    'chatroom' |
+    // Guides & Info
+    'guidesinfo' |
+    // Games
+    'games' |
     // Settings page
     'settings';
 
@@ -295,6 +304,7 @@ const navItems = [
             { id: 'taskbuilder', label: 'AI Task Manager', icon: ClipboardListIcon },
             { id: 'wiki', label: 'Personal Wiki', icon: BrainIcon },
             { id: 'autonotes', label: 'Autonotes', icon: DocumentTextIcon },
+            { id: 'chatroom', label: 'Chat Room', icon: ChatBubbleBottomCenterTextIcon },
         ]
     },
     {
@@ -561,6 +571,36 @@ const AppContent: React.FC = () => {
         localStorage.setItem(SHORTCUTS_KEY, JSON.stringify(newShortcuts));
     };
 
+    // Hidden pages state for Members+ (stored in localStorage)
+    const HIDDEN_PAGES_KEY = 'accelerate-hidden-pages';
+    const [hiddenPages, setHiddenPages] = useState<string[]>(() => {
+        try {
+            const stored = localStorage.getItem(HIDDEN_PAGES_KEY);
+            return stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            console.error("Could not read hidden pages from localStorage", e);
+            return [];
+        }
+    });
+
+    const updateHiddenPages = (newHiddenPages: string[]) => {
+        setHiddenPages(newHiddenPages);
+        localStorage.setItem(HIDDEN_PAGES_KEY, JSON.stringify(newHiddenPages));
+    };
+
+    const hidePageFromSidebar = (pageId: string) => {
+        const updatedHiddenPages = [...hiddenPages, pageId];
+        updateHiddenPages(updatedHiddenPages);
+    };
+
+    const showPageInSidebar = (pageId: string) => {
+        const updatedHiddenPages = hiddenPages.filter(id => id !== pageId);
+        updateHiddenPages(updatedHiddenPages);
+    };
+
+    // Check if user is Members+ (Member, VIP, or God-Tier)
+    const isMemberPlus = profile?.tier && ['Member', 'VIP', 'God-Tier'].includes(profile.tier);
+
     const isResizing = useRef(false);
 
     const handleSaveNote = (destination: 'wiki' | 'autonotes', content: string) => {
@@ -683,12 +723,15 @@ const AppContent: React.FC = () => {
         const nonFavoriteGroups = navItems
             .map(group => ({
                 ...group,
-                items: group.items.filter(item => !favorites.includes(item.id as Page)),
+                items: group.items.filter(item =>
+                    !favorites.includes(item.id as Page) &&
+                    !hiddenPages.includes(item.id)
+                ),
             }))
             .filter(group => group.items.length > 0);
 
         return favoriteItems.length > 0 ? [favoriteGroup, ...nonFavoriteGroups] : nonFavoriteGroups;
-    }, [favorites]);
+    }, [favorites, hiddenPages]);
 
 
     const filteredNavItems = useMemo(() => {
@@ -858,7 +901,7 @@ const AppContent: React.FC = () => {
             case 'slogan': return <SloganGenerator />;
             case 'calculator': return <Calculator />;
             case 'handwritten': return <HandwrittenNotes onSaveNote={handleSaveNote} />;
-            case 'whiteboard': return <Whiteboard />;
+            case 'whiteboard': return <WhiteboardTabs />;
             case 'aiimageeditor': return <AIImageEditor />;
             case 'contactmanager': return <ContactManager />;
             case 'enhancedtaskmanager': return <EnhancedTaskManager />;
@@ -866,6 +909,9 @@ const AppContent: React.FC = () => {
             case 'cryptoprices': return <CryptoPricesTracker />;
             case 'bookmarksmanager': return <BookmarksManager />;
             case 'bottlecounter': return <BottleCounter />;
+            case 'chatroom': return <ChatRoom />;
+            case 'guidesinfo': return <GuidesInfo />;
+            case 'games': return <Games />;
             case 'userdashboard': return <UserDashboard />;
             case 'settings': return <Settings shortcuts={shortcuts} updateShortcuts={updateShortcuts} />;
             default: return <ImageGenerator sharedPrompt={sharedPrompt} setSharedPrompt={setSharedPrompt} />;
@@ -940,44 +986,64 @@ const AppContent: React.FC = () => {
                                             {!isCollapsed && <span className="pr-6 truncate">{item.label}</span>}
                                         </button>
                                         {!isCollapsed && item.id !== 'settings' && (
-                                            <button
-                                                onClick={async (e) => {
-                                                    e.stopPropagation();
-                                                    try {
-                                                        await toggleFavorite(item.id as Page);
-                                                    } catch (error) {
-                                                        console.error('Error toggling favorite:', error);
+                                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                                {/* Hide Button for Members+ */}
+                                                {isMemberPlus && (
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            hidePageFromSidebar(item.id);
+                                                        }}
+                                                        className="p-1 rounded-full transition-opacity text-gray-400 dark:text-slate-500 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 opacity-0 group-hover/item:opacity-100"
+                                                        title={`Hide ${item.label} from sidebar`}
+                                                        aria-label={`Hide ${item.label} from sidebar`}
+                                                    >
+                                                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                )}
+
+                                                {/* Favorite Star Button */}
+                                                <button
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        try {
+                                                            await toggleFavorite(item.id as Page);
+                                                        } catch (error) {
+                                                            console.error('Error toggling favorite:', error);
+                                                        }
+                                                    }}
+                                                    disabled={!user || loading}
+                                                    className={`p-1 rounded-full transition-opacity ${
+                                                        (!user || loading)
+                                                            ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed'
+                                                            : 'text-gray-400 dark:text-slate-500 hover:bg-gray-300 dark:hover:bg-slate-600'
+                                                    } ${favorites.includes(item.id as Page) ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}
+                                                    title={
+                                                        loading
+                                                            ? 'Loading...'
+                                                            : !user
+                                                                ? 'Sign in to use favorites'
+                                                                : favorites.includes(item.id as Page)
+                                                                    ? 'Remove from Favorites'
+                                                                    : 'Add to Favorites'
                                                     }
-                                                }}
-                                                disabled={!user || loading}
-                                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full transition-opacity ${
-                                                    (!user || loading)
-                                                        ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed'
-                                                        : 'text-gray-400 dark:text-slate-500 hover:bg-gray-300 dark:hover:bg-slate-600'
-                                                } ${favorites.includes(item.id as Page) ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}
-                                                title={
-                                                    loading
-                                                        ? 'Loading...'
-                                                        : !user
-                                                            ? 'Sign in to use favorites'
-                                                            : favorites.includes(item.id as Page)
-                                                                ? 'Remove from Favorites'
-                                                                : 'Add to Favorites'
-                                                }
-                                                aria-label={
-                                                    loading
-                                                        ? 'Loading...'
-                                                        : !user
-                                                            ? 'Sign in to use favorites'
-                                                            : favorites.includes(item.id as Page)
-                                                                ? `Remove ${item.label} from Favorites`
-                                                                : `Add ${item.label} to Favorites`
-                                                }
-                                            >
-                                                {favorites.includes(item.id as Page) 
-                                                    ? <StarSolidIcon className="h-4 w-4 text-yellow-400" /> 
-                                                    : <StarIcon className="h-4 w-4" />}
-                                            </button>
+                                                    aria-label={
+                                                        loading
+                                                            ? 'Loading...'
+                                                            : !user
+                                                                ? 'Sign in to use favorites'
+                                                                : favorites.includes(item.id as Page)
+                                                                    ? `Remove ${item.label} from Favorites`
+                                                                    : `Add ${item.label} to Favorites`
+                                                    }
+                                                >
+                                                    {favorites.includes(item.id as Page)
+                                                        ? <StarSolidIcon className="h-4 w-4 text-yellow-400" />
+                                                        : <StarIcon className="h-4 w-4" />}
+                                                </button>
+                                            </div>
                                         )}
                                     </li>
                                 ))}
@@ -1001,9 +1067,28 @@ const AppContent: React.FC = () => {
                 {/* Top Header */}
                 <header className="relative flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 bg-white/70 dark:bg-slate-800/50 backdrop-blur-md border-b border-gray-200 dark:border-slate-700 z-50">
                     <div className="flex items-center space-x-4">
-                        <h1 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
-                            {currentTool ? currentTool.label : 'Welcome to Accelerate.ai'}
-                        </h1>
+                        {/* Top Navigation Menu */}
+                        <nav className="flex space-x-1">
+                            {[
+                                { id: 'pg-1', label: 'Games', page: 'games' },
+                                { id: 'pg-2', label: 'Chat Room', page: 'chatroom' },
+                                { id: 'pg-3', label: 'pg-3', page: 'generator' },
+                                { id: 'pg-4', label: 'Guides&Info', page: 'guidesinfo' },
+                                { id: 'pg-5', label: 'pg-5', page: 'generator' }
+                            ].map((pageItem, index) => (
+                                <button
+                                    key={pageItem.id}
+                                    onClick={() => setActivePage(pageItem.page as Page)}
+                                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                        activePage === pageItem.page
+                                            ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                                            : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
+                                    }`}
+                                >
+                                    {pageItem.label}
+                                </button>
+                            ))}
+                        </nav>
                     </div>
                     <UserProfileWidget onNavigate={(page) => setActivePage(page as Page)} />
                 </header>
