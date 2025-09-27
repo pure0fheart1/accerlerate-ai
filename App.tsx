@@ -1063,9 +1063,9 @@ const AppContent: React.FC = () => {
             )}
             
             {/* Main Content */}
-            <main className="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-slate-900">
+            <main className="flex-1 flex flex-col bg-gray-50 dark:bg-slate-900">
                 {/* Top Header */}
-                <header className="relative flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 bg-white/70 dark:bg-slate-800/50 backdrop-blur-md border-b border-gray-200 dark:border-slate-700 z-50">
+                <header className="relative flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 bg-white/70 dark:bg-slate-800/50 backdrop-blur-md border-b border-gray-200 dark:border-slate-700 z-50 overflow-visible">
                     <div className="flex items-center space-x-4">
                         {/* Top Navigation Menu */}
                         <nav className="flex space-x-1">

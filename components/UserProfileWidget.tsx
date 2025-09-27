@@ -128,7 +128,7 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
   };
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div className={`relative ${className}`} ref={dropdownRef} style={{ zIndex: 9999 }}>
       {/* Profile trigger button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -177,7 +177,7 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="fixed right-4 top-20 w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-[99999] max-h-[calc(100vh-5rem)] overflow-y-auto">
+        <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-[99999] max-h-[calc(100vh-5rem)] overflow-y-auto" style={{ zIndex: 99999 }}>
           {/* Header */}
           <div className="p-4 border-b border-gray-200 dark:border-slate-700">
             <div className="flex items-center space-x-3">
