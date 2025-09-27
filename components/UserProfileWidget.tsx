@@ -177,7 +177,7 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 z-[99999] max-h-[calc(100vh-5rem)] overflow-y-auto">
+        <div className="fixed right-4 top-20 w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-[99999] max-h-[calc(100vh-5rem)] overflow-y-auto">
           {/* Header */}
           <div className="p-4 border-b border-gray-200 dark:border-slate-700">
             <div className="flex items-center space-x-3">
