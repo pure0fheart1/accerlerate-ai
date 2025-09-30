@@ -14,6 +14,16 @@ export interface UserProfile {
   subscription_status: 'active' | 'inactive' | 'trial' | 'cancelled';
   subscription_end_date?: string;
   favorite_pages: string[];
+  login_streak: number;
+  last_login_date?: string;
+  longest_streak: number;
+  total_logins: number;
+  bio?: string;
+  location?: string;
+  website?: string;
+  email_notifications?: boolean;
+  weekly_reports?: boolean;
+  marketing_emails?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -56,31 +66,23 @@ export class SmechalsService {
   // Create initial user profile
   static async createUserProfile(userId: string, email: string): Promise<UserProfile | null> {
     try {
-      const displayName = email.split('@')[0];
+      // Call API endpoint that uses service role key to bypass RLS
+      const response = await fetch('/api/create-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, email }),
+      });
 
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: userId,
-          email,
-          display_name: displayName,
-          tier: 'Free',
-          smechals_balance: 0,
-          subscription_status: 'inactive',
-          favorite_pages: []
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating user profile:', error);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error creating user profile:', errorData);
         return null;
       }
 
-      // Give new users initial bonus
-      await this.addSmechals(userId, SMECHAL_RATES.DAILY_FREE_BONUS, 'bonus', 'Welcome bonus');
-
-      return data;
+      const { profile } = await response.json();
+      return profile;
     } catch (error) {
       console.error('Error in createUserProfile:', error);
       return null;
@@ -466,6 +468,104 @@ export class SmechalsService {
       return await this.updateFavoritePages(userId, updatedFavorites);
     } catch (error) {
       console.error('Error in removeFavoritePage:', error);
+      return false;
+    }
+  }
+
+  // Update login streak
+  static async updateLoginStreak(userId: string): Promise<{ streak: number; isNewStreak: boolean }> {
+    try {
+      const profile = await this.getUserProfile(userId);
+      if (!profile) {
+        return { streak: 0, isNewStreak: false };
+      }
+
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      const lastLogin = profile.last_login_date ? new Date(profile.last_login_date).toISOString().split('T')[0] : null;
+
+      // If already logged in today, return current streak
+      if (lastLogin === today) {
+        return { streak: profile.login_streak, isNewStreak: false };
+      }
+
+      let newStreak = 1;
+      let isNewStreak = false;
+
+      if (lastLogin) {
+        const lastLoginDate = new Date(lastLogin);
+        const daysDiff = Math.floor((now.getTime() - lastLoginDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (daysDiff === 1) {
+          // Consecutive day - increment streak
+          newStreak = profile.login_streak + 1;
+          isNewStreak = true;
+        } else if (daysDiff > 1) {
+          // Streak broken - reset to 1
+          newStreak = 1;
+        }
+      }
+
+      const longestStreak = Math.max(profile.longest_streak || 0, newStreak);
+      const totalLogins = (profile.total_logins || 0) + 1;
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          login_streak: newStreak,
+          last_login_date: now.toISOString(),
+          longest_streak: longestStreak,
+          total_logins: totalLogins,
+          updated_at: now.toISOString()
+        })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error updating login streak:', error);
+        return { streak: profile.login_streak, isNewStreak: false };
+      }
+
+      // Give streak bonus if applicable
+      if (isNewStreak && newStreak % 7 === 0) {
+        // Bonus every 7 days
+        await this.addSmechals(userId, SMECHAL_RATES.DAILY_FREE_BONUS * 2, 'bonus', `${newStreak} day streak bonus!`);
+      }
+
+      return { streak: newStreak, isNewStreak };
+    } catch (error) {
+      console.error('Error in updateLoginStreak:', error);
+      return { streak: 0, isNewStreak: false };
+    }
+  }
+
+  // Update user profile settings
+  static async updateProfile(userId: string, updates: {
+    display_name?: string;
+    profile_picture_url?: string;
+    bio?: string;
+    location?: string;
+    website?: string;
+    email_notifications?: boolean;
+    weekly_reports?: boolean;
+    marketing_emails?: boolean;
+  }): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error updating profile:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in updateProfile:', error);
       return false;
     }
   }
