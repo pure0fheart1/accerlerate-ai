@@ -66,10 +66,16 @@ const SmechalsModal: React.FC<SmechalsModalProps> = ({
   const canRequestTool = currentSmechals >= SMECHAL_RATES.TOOL_REQUEST_COST;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[90] flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-gray-200 dark:border-slate-700 m-4 sm:m-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center space-x-3">
             <CoinsIcon className="h-8 w-8 text-amber-500" />
             <div>
@@ -91,7 +97,7 @@ const SmechalsModal: React.FC<SmechalsModalProps> = ({
 
         {/* Tabs */}
         <div className="border-b border-gray-200 dark:border-slate-700">
-          <nav className="flex space-x-8 px-6">
+          <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6">
             {[
               { id: 'overview', label: 'Overview' },
               { id: 'transactions', label: 'Transactions' },
@@ -113,7 +119,7 @@ const SmechalsModal: React.FC<SmechalsModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
+        <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Balance Card */}

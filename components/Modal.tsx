@@ -12,7 +12,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, imageUrl }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-gray-900/80 dark:bg-slate-900/90 backdrop-blur-sm flex justify-center items-center z-[60] transition-opacity duration-300"
+      className="fixed inset-0 bg-gray-900/80 dark:bg-slate-900/90 backdrop-blur-sm flex justify-center items-center z-[9999] transition-opacity duration-300"
       onClick={onClose}
       aria-modal="true"
       role="dialog"

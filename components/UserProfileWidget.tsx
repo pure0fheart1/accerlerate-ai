@@ -26,7 +26,9 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
   const [isToolRequestOpen, setIsToolRequestOpen] = useState(false);
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
   const [isUsageDashboardOpen, setIsUsageDashboardOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top?: number; bottom?: number; right: number }>({ right: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Use real profile data or fallback to defaults
   const userProfile = {
@@ -66,6 +68,32 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Calculate dropdown position when opened
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const triggerRect = triggerRef.current.getBoundingClientRect();
+      const dropdownHeight = 500; // Approximate height of dropdown
+      const spaceBelow = window.innerHeight - triggerRect.bottom;
+      const spaceAbove = triggerRect.top;
+
+      // Calculate right offset from viewport right edge
+      const rightOffset = window.innerWidth - triggerRect.right;
+
+      // If there's not enough space below and more space above, position at top
+      if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+        setDropdownPosition({
+          bottom: window.innerHeight - triggerRect.top + 8,
+          right: rightOffset
+        });
+      } else {
+        setDropdownPosition({
+          top: triggerRect.bottom + 8,
+          right: rightOffset
+        });
+      }
+    }
+  }, [isOpen]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -128,9 +156,10 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
   };
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef} style={{ zIndex: 9999 }}>
+    <div className={`relative ${className}`} ref={dropdownRef}>
       {/* Profile trigger button */}
       <button
+        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors duration-200"
       >
@@ -177,7 +206,15 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-[99999] max-h-[calc(100vh-5rem)] overflow-y-auto" style={{ zIndex: 99999 }}>
+        <div
+          className="fixed w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-[99999] max-h-[calc(100vh-5rem)] overflow-y-auto"
+          style={{
+            top: dropdownPosition.top,
+            bottom: dropdownPosition.bottom,
+            right: dropdownPosition.right,
+            zIndex: 99999
+          }}
+        >
           {/* Header */}
           <div className="p-4 border-b border-gray-200 dark:border-slate-700">
             <div className="flex items-center space-x-3">

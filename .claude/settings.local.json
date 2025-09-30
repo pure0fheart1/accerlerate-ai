@@ -32,7 +32,11 @@
       "mcp__kapture__navigate",
       "mcp__kapture__screenshot",
       "mcp__kapture__click",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 10 npm run dev)",
+      "Bash(comm:*)"
     ],
     "deny": [],
     "ask": []

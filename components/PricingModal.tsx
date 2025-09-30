@@ -61,7 +61,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black bg-opacity-60 flex items-start justify-center p-2 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 bg-black bg-opacity-60 flex items-start justify-center p-2 sm:p-4 overflow-y-auto z-[9999]"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -76,9 +76,9 @@ const PricingModal: React.FC<PricingModalProps> = ({
         bottom: 0
       }}
     >
-      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-6xl w-full mt-4 mb-8 shadow-2xl border border-gray-200 dark:border-slate-700 max-h-[95vh] flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-7xl w-full mt-2 mb-2 shadow-2xl border border-gray-200 dark:border-slate-700 max-h-[98vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
               Choose Your Plan
@@ -96,7 +96,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
         </div>
 
         {/* Billing Toggle */}
-        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
+        <div className="p-2 sm:p-3 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
           <div className="flex items-center justify-center">
             <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-1 flex">
               <button
@@ -127,8 +127,8 @@ const PricingModal: React.FC<PricingModalProps> = ({
         </div>
 
         {/* Pricing Cards */}
-        <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="p-3 sm:p-4 flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {tiers.map((tier) => {
               const benefits = TIER_BENEFITS[tier];
               const isCurrentTier = tier === currentTier;
@@ -137,7 +137,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
               return (
                 <div
                   key={tier}
-                  className={`relative rounded-xl border-2 p-6 ${
+                  className={`relative rounded-xl border-2 p-4 ${
                     isCurrentTier
                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                       : isPopular

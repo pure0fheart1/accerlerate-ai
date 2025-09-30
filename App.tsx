@@ -161,6 +161,7 @@ import BottleCounter from './pages/BottleCounter';
 import ChatRoom from './pages/ChatRoom';
 import GuidesInfo from './pages/GuidesInfo';
 import Games from './pages/Games';
+import GemBooth from './pages/GemBooth';
 import { Logo } from './components/Logo';
 import UserProfileWidget from './components/UserProfileWidget';
 
@@ -284,6 +285,8 @@ export type Page =
     'guidesinfo' |
     // Games
     'games' |
+    // GemBooth
+    'gembooth' |
     // Settings page
     'settings';
 
@@ -912,6 +915,7 @@ const AppContent: React.FC = () => {
             case 'chatroom': return <ChatRoom />;
             case 'guidesinfo': return <GuidesInfo />;
             case 'games': return <Games />;
+            case 'gembooth': return <GemBooth />;
             case 'userdashboard': return <UserDashboard />;
             case 'settings': return <Settings shortcuts={shortcuts} updateShortcuts={updateShortcuts} />;
             default: return <ImageGenerator sharedPrompt={sharedPrompt} setSharedPrompt={setSharedPrompt} />;
@@ -1072,7 +1076,7 @@ const AppContent: React.FC = () => {
                             {[
                                 { id: 'pg-1', label: 'Games', page: 'games' },
                                 { id: 'pg-2', label: 'Chat Room', page: 'chatroom' },
-                                { id: 'pg-3', label: 'pg-3', page: 'generator' },
+                                { id: 'pg-3', label: 'GemBooth', page: 'gembooth' },
                                 { id: 'pg-4', label: 'Guides&Info', page: 'guidesinfo' },
                                 { id: 'pg-5', label: 'pg-5', page: 'generator' }
                             ].map((pageItem, index) => (
