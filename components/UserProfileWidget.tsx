@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { useUsageTracking } from '../contexts/UsageTrackingContext';
@@ -410,8 +411,11 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
         onClose={() => setIsProfileSettingsOpen(false)}
       />
 
-      {isUsageDashboardOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
+      {isUsageDashboardOpen && createPortal(
+        <div
+          className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4"
+          style={{ zIndex: 999999 }}
+        >
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Usage Dashboard</h2>
@@ -427,7 +431,8 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
             </div>
             <UsageDashboard className="border-none rounded-none" />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

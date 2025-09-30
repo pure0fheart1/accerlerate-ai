@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { XMarkIcon, CoinsIcon, CheckIcon, ClockIcon } from './icons';
 import { SMECHAL_RATES } from '../constants/tiers';
 
@@ -74,8 +75,11 @@ const ToolRequestModal: React.FC<ToolRequestModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+  const modalContent = (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+      style={{ zIndex: 999999 }}
+    >
       <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
@@ -241,6 +245,8 @@ const ToolRequestModal: React.FC<ToolRequestModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default ToolRequestModal;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { XMarkIcon, CoinsIcon, PlusIcon, MinusIcon, ClockIcon, CheckIcon } from './icons';
 import { SmechalsTransaction, UserTier } from '../types';
 import { SMECHAL_RATES } from '../constants/tiers';
@@ -65,10 +66,11 @@ const SmechalsModal: React.FC<SmechalsModalProps> = ({
 
   const canRequestTool = currentSmechals >= SMECHAL_RATES.TOOL_REQUEST_COST;
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
       onClick={onClose}
+      style={{ zIndex: 999999 }}
     >
       <div
         className="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-gray-200 dark:border-slate-700 m-4 sm:m-6"
@@ -306,6 +308,8 @@ const SmechalsModal: React.FC<SmechalsModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default SmechalsModal;
