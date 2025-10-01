@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useUsageTracking } from '../contexts/UsageTrackingContext';
+import { useUserProfile } from '../contexts/UserProfileContext';
 import { ChartBarIcon, ClockIcon, CheckIcon, XMarkIcon, StarIcon, CalendarIcon } from './icons';
 
 interface UsageDashboardProps {
@@ -8,6 +9,7 @@ interface UsageDashboardProps {
 
 const UsageDashboard: React.FC<UsageDashboardProps> = ({ className = '' }) => {
   const { stats, recentSessions, loading } = useUsageTracking();
+  const { profile } = useUserProfile();
   const [activeTab, setActiveTab] = useState<'overview' | 'tools' | 'sessions' | 'trends'>('overview');
 
   if (loading) {
@@ -113,6 +115,41 @@ const UsageDashboard: React.FC<UsageDashboardProps> = ({ className = '' }) => {
       <div className="p-6">
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            {/* Day Streak Highlight */}
+            {profile && (
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl p-6 text-white shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-white/20 backdrop-blur-sm rounded-full p-4">
+                      <span className="text-5xl">🔥</span>
+                    </div>
+                    <div>
+                      <div className="text-4xl font-bold mb-1">
+                        {profile.login_streak} {profile.login_streak === 1 ? 'Day' : 'Days'}
+                      </div>
+                      <div className="text-lg opacity-90">
+                        Login Streak
+                      </div>
+                      {profile.longest_streak > 0 && (
+                        <div className="text-sm opacity-75 mt-2 flex items-center space-x-2">
+                          <span>🏆</span>
+                          <span>Longest: {profile.longest_streak} days</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm opacity-75 mb-2">
+                      Keep it going!
+                    </div>
+                    <div className="text-xs opacity-60">
+                      Login daily to maintain your streak
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
@@ -171,6 +208,29 @@ const UsageDashboard: React.FC<UsageDashboardProps> = ({ className = '' }) => {
                 </div>
               </div>
             </div>
+
+            {/* Favorite Pages */}
+            {profile && profile.favorite_pages && profile.favorite_pages.length > 0 && (
+              <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-6">
+                <div className="flex items-center space-x-2 mb-4">
+                  <StarIcon className="h-5 w-5 text-yellow-500" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+                    Favorite Pages
+                  </h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {profile.favorite_pages.map((page, index) => (
+                    <div
+                      key={index}
+                      className="px-4 py-2 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm font-medium text-yellow-800 dark:text-yellow-200 flex items-center space-x-2"
+                    >
+                      <StarIcon className="h-4 w-4" />
+                      <span>{page}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

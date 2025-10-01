@@ -36,7 +36,18 @@
       "Bash(npm run typecheck:*)",
       "Bash(npx tsc:*)",
       "Bash(timeout 10 npm run dev)",
-      "Bash(comm:*)"
+      "Bash(comm:*)",
+      "mcp__playwright__init-browser",
+      "Bash(npx playwright install:*)",
+      "mcp__docker-mcp-toolkit__browser_install",
+      "mcp__docker-mcp-toolkit__browser_navigate",
+      "Bash(timeout:*)",
+      "mcp__docker-mcp-toolkit__browser_take_screenshot",
+      "mcp__docker-mcp-toolkit__browser_click",
+      "mcp__docker-mcp-toolkit__browser_type",
+      "mcp__docker-mcp-toolkit__browser_snapshot",
+      "mcp__filesystem__list_directory",
+      "Bash(VITE_HOST=0.0.0.0 vercel dev --listen 3000)"
     ],
     "deny": [],
     "ask": []

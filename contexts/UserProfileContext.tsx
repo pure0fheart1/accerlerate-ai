@@ -19,6 +19,16 @@ interface UserProfileContextType {
   addFavoritePage: (pageName: string) => Promise<boolean>;
   removeFavoritePage: (pageName: string) => Promise<boolean>;
   updateFavoritePages: (favoritePages: string[]) => Promise<boolean>;
+  updateProfile: (updates: {
+    display_name?: string;
+    profile_picture_url?: string;
+    bio?: string;
+    location?: string;
+    website?: string;
+    email_notifications?: boolean;
+    weekly_reports?: boolean;
+    marketing_emails?: boolean;
+  }) => Promise<boolean>;
 }
 
 const UserProfileContext = createContext<UserProfileContextType | undefined>(undefined);
@@ -59,10 +69,13 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
 
       setProfile(userProfile);
 
-      // Check for daily bonus
+      // Check for daily bonus and update login streak
       if (userProfile) {
-        await SmechalsService.checkDailyBonus(user.id);
-        // Refresh profile after potential daily bonus
+        await Promise.all([
+          SmechalsService.checkDailyBonus(user.id),
+          SmechalsService.updateLoginStreak(user.id)
+        ]);
+        // Refresh profile after potential daily bonus and streak update
         const updatedProfile = await SmechalsService.getUserProfile(user.id);
         setProfile(updatedProfile);
       }
@@ -195,6 +208,25 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
     return success;
   }, [user, refreshProfile]);
 
+  const updateProfile = useCallback(async (updates: {
+    display_name?: string;
+    profile_picture_url?: string;
+    bio?: string;
+    location?: string;
+    website?: string;
+    email_notifications?: boolean;
+    weekly_reports?: boolean;
+    marketing_emails?: boolean;
+  }): Promise<boolean> => {
+    if (!user) return false;
+
+    const success = await SmechalsService.updateProfile(user.id, updates);
+    if (success) {
+      await refreshProfile();
+    }
+    return success;
+  }, [user, refreshProfile]);
+
   // Load profile when user changes
   useEffect(() => {
     if (!authLoading) {
@@ -245,6 +277,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
     addFavoritePage,
     removeFavoritePage,
     updateFavoritePages,
+    updateProfile,
   };
 
   return (

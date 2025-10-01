@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import PongGame from '../games/PongGame';
+import ChessGame from '../games/ChessGame';
+import WeaponDodgeGame from '../games/WeaponDodgeGame';
+import TicTacToeGame from '../games/TicTacToeGame';
 
 interface Game {
   id: string;
@@ -16,94 +20,54 @@ const Games: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [isPlayingPong, setIsPlayingPong] = useState(false);
+  const [isPlayingChess, setIsPlayingChess] = useState(false);
+  const [isPlayingWeaponDodge, setIsPlayingWeaponDodge] = useState(false);
+  const [isPlayingTicTacToe, setIsPlayingTicTacToe] = useState(false);
 
   const games: Game[] = [
     {
-      id: '1',
-      title: 'Memory Master',
-      description: 'Test your memory with this challenging pattern recognition game. Match sequences and improve your cognitive abilities.',
-      category: 'puzzle',
-      difficulty: 'medium',
-      playTime: '5-15 min',
-      players: '1',
-      image: '🧠',
-      status: 'available'
-    },
-    {
-      id: '2',
-      title: 'Speed Math',
-      description: 'Sharpen your arithmetic skills with fast-paced mathematical challenges. Perfect for improving mental calculation speed.',
-      category: 'educational',
-      difficulty: 'easy',
-      playTime: '3-10 min',
-      players: '1',
-      image: '🔢',
-      status: 'available'
-    },
-    {
-      id: '3',
-      title: 'Strategy Commander',
-      description: 'Lead your army to victory in this turn-based strategy game. Plan your moves carefully to outmaneuver opponents.',
-      category: 'strategy',
-      difficulty: 'hard',
-      playTime: '15-30 min',
-      players: '1-4',
-      image: '⚔️',
-      status: 'beta'
-    },
-    {
-      id: '4',
-      title: 'Reaction Rush',
-      description: 'Test your reflexes in this high-speed action game. Click, tap, and react as fast as you can to beat the clock.',
+      id: 'pong',
+      title: 'Pong',
+      description: 'Classic arcade game! Control your paddle to beat the AI opponent. First to 11 points wins! Features Xbox controller support, fullscreen mode, and global high scores.',
       category: 'action',
       difficulty: 'medium',
-      playTime: '2-5 min',
-      players: '1',
-      image: '⚡',
+      playTime: '5-10 min',
+      players: '1 vs AI',
+      image: '🏓',
       status: 'available'
     },
     {
-      id: '5',
-      title: 'Word Wizard',
-      description: 'Expand your vocabulary while having fun. Create words from letter combinations and unlock new challenges.',
+      id: 'chess',
+      title: 'Chess',
+      description: 'The timeless strategy game! Play chess with all standard rules including castling, en passant, and pawn promotion. Features move history, captured pieces tracking, and check/checkmate detection.',
+      category: 'strategy',
+      difficulty: 'hard',
+      playTime: '20-60 min',
+      players: '2 Players',
+      image: '♔',
+      status: 'available'
+    },
+    {
+      id: 'weapondodge',
+      title: 'Weapon Dodge Arena',
+      description: 'Epic 2D dodge game with Xbox controller support - Survive the weapon storm! Features dash mechanics, energy system, particle effects, and intense action. Dodge incoming weapons and rack up combos!',
+      category: 'action',
+      difficulty: 'medium',
+      playTime: '5-15 min',
+      players: '1 Player',
+      image: '🎯',
+      status: 'available'
+    },
+    {
+      id: 'tictactoe',
+      title: 'Tic-Tac-Toe vs AI',
+      description: 'Challenge yourself against an AI opponent! Choose from Easy (Random), Medium (Strategic), or Hard (Unbeatable Minimax) difficulty. Track your win streaks and compete for high scores!',
       category: 'puzzle',
       difficulty: 'easy',
-      playTime: '5-20 min',
-      players: '1',
-      image: '📝',
-      status: 'available'
-    },
-    {
-      id: '6',
-      title: 'Zen Garden',
-      description: 'Relax and unwind with this peaceful simulation game. Create beautiful patterns and find your inner calm.',
-      category: 'casual',
-      difficulty: 'easy',
-      playTime: '10-∞ min',
-      players: '1',
-      image: '🌸',
-      status: 'available'
-    },
-    {
-      id: '7',
-      title: 'Physics Playground',
-      description: 'Experiment with realistic physics in this educational sandbox. Learn while you play with gravity, momentum, and forces.',
-      category: 'educational',
-      difficulty: 'medium',
-      playTime: '10-30 min',
-      players: '1',
-      image: '🔬',
-      status: 'coming-soon'
-    },
-    {
-      id: '8',
-      title: 'Color Harmony',
-      description: 'Match colors and create beautiful combinations in this relaxing puzzle game. Perfect for designers and art lovers.',
-      category: 'casual',
-      difficulty: 'easy',
-      playTime: '5-15 min',
-      players: '1',
-      image: '🎨',
+      playTime: '1-3 min',
+      players: '1 vs AI',
+      image: '⭕',
       status: 'available'
     }
   ];
@@ -144,11 +108,85 @@ const Games: React.FC = () => {
 
   const handlePlayGame = (game: Game) => {
     if (game.status === 'available' || game.status === 'beta') {
-      alert(`Starting ${game.title}... (Game integration would go here)`);
+      if (game.id === 'pong') {
+        setIsPlayingPong(true);
+        setSelectedGame(null);
+      } else if (game.id === 'chess') {
+        setIsPlayingChess(true);
+        setSelectedGame(null);
+      } else if (game.id === 'weapondodge') {
+        setIsPlayingWeaponDodge(true);
+        setSelectedGame(null);
+      } else if (game.id === 'tictactoe') {
+        setIsPlayingTicTacToe(true);
+        setSelectedGame(null);
+      } else {
+        alert(`Starting ${game.title}... (Game integration would go here)`);
+      }
     } else {
       alert(`${game.title} is coming soon! Stay tuned for updates.`);
     }
   };
+
+  // Show Pong game if playing
+  if (isPlayingPong) {
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setIsPlayingPong(false)}
+          className="absolute top-4 left-4 z-50 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all duration-200 font-medium shadow-lg"
+        >
+          ← Back to Games
+        </button>
+        <PongGame />
+      </div>
+    );
+  }
+
+  // Show Chess game if playing
+  if (isPlayingChess) {
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setIsPlayingChess(false)}
+          className="absolute top-4 left-4 z-50 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all duration-200 font-medium shadow-lg"
+        >
+          ← Back to Games
+        </button>
+        <ChessGame />
+      </div>
+    );
+  }
+
+  // Show Weapon Dodge game if playing
+  if (isPlayingWeaponDodge) {
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setIsPlayingWeaponDodge(false)}
+          className="absolute top-4 left-4 z-50 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all duration-200 font-medium shadow-lg"
+        >
+          ← Back to Games
+        </button>
+        <WeaponDodgeGame />
+      </div>
+    );
+  }
+
+  // Show TicTacToe game if playing
+  if (isPlayingTicTacToe) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-900 p-6">
+        <button
+          onClick={() => setIsPlayingTicTacToe(false)}
+          className="mb-4 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all duration-200 font-medium shadow-lg"
+        >
+          ← Back to Games
+        </button>
+        <TicTacToeGame />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-900 p-6">

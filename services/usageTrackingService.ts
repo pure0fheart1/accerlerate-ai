@@ -86,11 +86,16 @@ export class UsageTrackingService {
   // Get user's usage statistics
   static async getUserStats(userId: string): Promise<UsageStats | null> {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const thisWeekStart = new Date();
-      thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
-      const thisMonthStart = new Date();
-      thisMonthStart.setDate(1);
+      // Get current date boundaries in local time
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+      const thisWeekStart = new Date(now);
+      thisWeekStart.setDate(now.getDate() - now.getDay());
+      thisWeekStart.setHours(0, 0, 0, 0);
+
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
       // Get basic counts
       const [todayResult, weekResult, monthResult, totalResult] = await Promise.all([
@@ -98,8 +103,8 @@ export class UsageTrackingService {
           .from('usage_tracking')
           .select('id')
           .eq('user_id', userId)
-          .gte('created_at', `${today}T00:00:00.000Z`)
-          .lt('created_at', `${today}T23:59:59.999Z`),
+          .gte('created_at', todayStart.toISOString())
+          .lte('created_at', todayEnd.toISOString()),
 
         supabase
           .from('usage_tracking')

@@ -481,20 +481,30 @@ export class SmechalsService {
       }
 
       const now = new Date();
-      const today = now.toISOString().split('T')[0];
-      const lastLogin = profile.last_login_date ? new Date(profile.last_login_date).toISOString().split('T')[0] : null;
+      // Get today's date at midnight in UTC
+      const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+      const todayString = todayUTC.toISOString().split('T')[0];
+
+      let lastLoginDate: Date | null = null;
+      let lastLoginString: string | null = null;
+
+      if (profile.last_login_date) {
+        const lastLoginRaw = new Date(profile.last_login_date);
+        lastLoginDate = new Date(Date.UTC(lastLoginRaw.getFullYear(), lastLoginRaw.getMonth(), lastLoginRaw.getDate()));
+        lastLoginString = lastLoginDate.toISOString().split('T')[0];
+      }
 
       // If already logged in today, return current streak
-      if (lastLogin === today) {
+      if (lastLoginString === todayString) {
         return { streak: profile.login_streak, isNewStreak: false };
       }
 
       let newStreak = 1;
       let isNewStreak = false;
 
-      if (lastLogin) {
-        const lastLoginDate = new Date(lastLogin);
-        const daysDiff = Math.floor((now.getTime() - lastLoginDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (lastLoginDate) {
+        // Calculate day difference properly in UTC
+        const daysDiff = Math.floor((todayUTC.getTime() - lastLoginDate.getTime()) / (1000 * 60 * 60 * 24));
 
         if (daysDiff === 1) {
           // Consecutive day - increment streak

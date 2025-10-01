@@ -38,6 +38,8 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
     smechals: profile?.smechals_balance || 0,
     profilePicture: profile?.profile_picture_url || null,
     trialDaysLeft: profile?.trial_days_left || null,
+    loginStreak: profile?.login_streak || 0,
+    longestStreak: profile?.longest_streak || 0,
     usageData: {
       toolsUsedToday: stats?.toolsUsedToday || 0,
       toolsUsedThisMonth: stats?.toolsUsedThisMonth || 0,
@@ -257,7 +259,18 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
 
           {/* Quick stats */}
           <div className="p-4 border-b border-gray-200 dark:border-slate-700">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <div className="flex items-center justify-center space-x-1 mb-1">
+                  <span className="text-xl">🔥</span>
+                  <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                    {userProfile.loginStreak}
+                  </div>
+                </div>
+                <div className="text-xs text-gray-600 dark:text-slate-400">
+                  Day Streak
+                </div>
+              </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-gray-900 dark:text-slate-100">
                   {userProfile.usageData.toolsUsedToday}
@@ -275,6 +288,13 @@ const UserProfileWidget: React.FC<UserProfileWidgetProps> = ({ className = '', o
                 </div>
               </div>
             </div>
+            {userProfile.longestStreak > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
+                <div className="text-center text-xs text-gray-500 dark:text-slate-400">
+                  🏆 Longest Streak: <span className="font-semibold text-gray-700 dark:text-slate-300">{userProfile.longestStreak} days</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Trial notification (if applicable) */}

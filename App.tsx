@@ -158,7 +158,6 @@ import ClockTimerHub from './pages/ClockTimerHub';
 import CryptoPricesTracker from './pages/CryptoPricesTracker';
 import BookmarksManager from './pages/BookmarksManager';
 import BottleCounter from './pages/BottleCounter';
-import ChatRoom from './pages/ChatRoom';
 import GuidesInfo from './pages/GuidesInfo';
 import Games from './pages/Games';
 import GemBooth from './pages/GemBooth';
@@ -279,8 +278,6 @@ export type Page =
     'cryptoprices' |
     'bookmarksmanager' |
     'bottlecounter' |
-    // Chat room
-    'chatroom' |
     // Guides & Info
     'guidesinfo' |
     // Games
@@ -307,7 +304,6 @@ const navItems = [
             { id: 'taskbuilder', label: 'AI Task Manager', icon: ClipboardListIcon },
             { id: 'wiki', label: 'Personal Wiki', icon: BrainIcon },
             { id: 'autonotes', label: 'Autonotes', icon: DocumentTextIcon },
-            { id: 'chatroom', label: 'Chat Room', icon: ChatBubbleBottomCenterTextIcon },
         ]
     },
     {
@@ -912,7 +908,6 @@ const AppContent: React.FC = () => {
             case 'cryptoprices': return <CryptoPricesTracker />;
             case 'bookmarksmanager': return <BookmarksManager />;
             case 'bottlecounter': return <BottleCounter />;
-            case 'chatroom': return <ChatRoom />;
             case 'guidesinfo': return <GuidesInfo />;
             case 'games': return <Games />;
             case 'gembooth': return <GemBooth />;
@@ -1075,7 +1070,6 @@ const AppContent: React.FC = () => {
                         <nav className="flex space-x-1">
                             {[
                                 { id: 'pg-1', label: 'Games', page: 'games' },
-                                { id: 'pg-2', label: 'Chat Room', page: 'chatroom' },
                                 { id: 'pg-3', label: 'GemBooth', page: 'gembooth' },
                                 { id: 'pg-4', label: 'Guides&Info', page: 'guidesinfo' },
                                 { id: 'pg-5', label: 'pg-5', page: 'generator' }
