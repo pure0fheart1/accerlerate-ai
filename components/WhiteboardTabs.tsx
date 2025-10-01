@@ -32,6 +32,9 @@ const WhiteboardTabs: React.FC = () => {
       isActive: false
     };
 
+    // Clear whiteboard storage for new blank tab
+    localStorage.removeItem('accelerate-whiteboard');
+
     setTabs(prev => prev.map(tab => ({ ...tab, isActive: false })).concat({ ...newTab, isActive: true }));
     setActiveTabId(newTab.id);
   };

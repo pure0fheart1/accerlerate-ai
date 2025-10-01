@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { PongHighScoreService, PongHighScore } from '../services/pongHighScoreService';
+import { getGamepadState, useGamepad, isButtonJustPressed, type GamepadState } from '../lib/gamepadUtils';
 
 interface GameState {
   ballX: number;
@@ -23,7 +24,8 @@ const PongGame: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHighScores, setShowHighScores] = useState(false);
   const [highScores, setHighScores] = useState<PongHighScore[]>([]);
-  const [gamepadIndex, setGamepadIndex] = useState<number | null>(null);
+  const [gamepadConnected, setGamepadConnected] = useState(false);
+  const [previousGamepadState, setPreviousGamepadState] = useState<GamepadState | null>(null);
   const { user } = useAuth();
   const { profile } = useUserProfile();
 
@@ -59,26 +61,12 @@ const PongGame: React.FC = () => {
 
   // Gamepad detection
   useEffect(() => {
-    const handleGamepadConnected = (e: GamepadEvent) => {
-      console.log('Gamepad connected:', e.gamepad.id);
-      setGamepadIndex(e.gamepad.index);
-    };
+    const cleanup = useGamepad((connected) => {
+      setGamepadConnected(connected);
+    });
 
-    const handleGamepadDisconnected = (e: GamepadEvent) => {
-      console.log('Gamepad disconnected');
-      if (gamepadIndex === e.gamepad.index) {
-        setGamepadIndex(null);
-      }
-    };
-
-    window.addEventListener('gamepadconnected', handleGamepadConnected);
-    window.addEventListener('gamepaddisconnected', handleGamepadDisconnected);
-
-    return () => {
-      window.removeEventListener('gamepadconnected', handleGamepadConnected);
-      window.removeEventListener('gamepaddisconnected', handleGamepadDisconnected);
-    };
-  }, [gamepadIndex]);
+    return cleanup;
+  }, []);
 
   // Load high scores
   const loadHighScores = useCallback(async () => {
@@ -204,17 +192,12 @@ const PongGame: React.FC = () => {
       }
 
       // Player movement from gamepad
-      if (gamepadIndex !== null) {
-        const gamepads = navigator.getGamepads();
-        const gamepad = gamepads[gamepadIndex];
-        if (gamepad) {
-          const leftStickY = gamepad.axes[1]; // Left stick Y axis
-          const dpadUp = gamepad.buttons[12]?.pressed;
-          const dpadDown = gamepad.buttons[13]?.pressed;
-
-          if (leftStickY < -0.3 || dpadUp) {
+      if (gamepadConnected) {
+        const gamepadState = getGamepadState();
+        if (gamepadState) {
+          if (gamepadState.axes.leftStickY < -0.3 || gamepadState.buttons.dpadUp) {
             state.playerY = Math.max(0, state.playerY - PADDLE_SPEED);
-          } else if (leftStickY > 0.3 || dpadDown) {
+          } else if (gamepadState.axes.leftStickY > 0.3 || gamepadState.buttons.dpadDown) {
             state.playerY = Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, state.playerY + PADDLE_SPEED);
           }
         }
@@ -280,7 +263,7 @@ const PongGame: React.FC = () => {
     }
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [gamepadIndex, resetBall, submitScore]);
+  }, [gamepadConnected, resetBall, submitScore]);
 
   // Start game loop
   useEffect(() => {
@@ -342,17 +325,15 @@ const PongGame: React.FC = () => {
 
   // Gamepad button controls
   useEffect(() => {
+    if (!gamepadConnected) return;
+
     const checkGamepadButtons = () => {
-      if (gamepadIndex === null) return;
+      const currentState = getGamepadState();
+      if (!currentState) return;
 
-      const gamepads = navigator.getGamepads();
-      const gamepad = gamepads[gamepadIndex];
-      if (!gamepad) return;
-
-      const aButton = gamepad.buttons[0]?.pressed; // A button
-      const startButton = gamepad.buttons[9]?.pressed; // Start button
-
-      if (aButton || startButton) {
+      // A button or Start button to start/restart game
+      if (isButtonJustPressed('a', previousGamepadState, currentState) ||
+          isButtonJustPressed('start', previousGamepadState, currentState)) {
         const state = gameStateRef.current;
         if (state.gameOver) {
           state.ballX = CANVAS_WIDTH / 2;
@@ -370,11 +351,21 @@ const PongGame: React.FC = () => {
           state.gameStarted = true;
         }
       }
+
+      // Back button to pause
+      if (isButtonJustPressed('back', previousGamepadState, currentState)) {
+        const state = gameStateRef.current;
+        if (state.gameStarted && !state.gameOver) {
+          state.paused = !state.paused;
+        }
+      }
+
+      setPreviousGamepadState(currentState);
     };
 
-    const interval = setInterval(checkGamepadButtons, 100);
+    const interval = setInterval(checkGamepadButtons, 16); // ~60fps
     return () => clearInterval(interval);
-  }, [gamepadIndex]);
+  }, [gamepadConnected, previousGamepadState]);
 
   // Fullscreen toggle
   const toggleFullscreen = () => {
@@ -422,9 +413,9 @@ const PongGame: React.FC = () => {
                 </button>
               </div>
             </div>
-            {gamepadIndex !== null && (
+            {gamepadConnected && (
               <div className="mt-4 px-4 py-2 bg-green-500/20 border border-green-500 rounded-lg">
-                <p className="text-green-200 text-sm">🎮 Xbox Controller Connected</p>
+                <p className="text-green-200 text-sm">🎮 Xbox Controller Connected - Left Stick/D-Pad: Move | A/Start: Start | Back: Pause</p>
               </div>
             )}
           </div>

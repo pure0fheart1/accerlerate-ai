@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { getGamepadState, useGamepad, isButtonJustPressed, type GamepadState } from '../lib/gamepadUtils';
 
 // Type definitions
 type Player = 'X' | 'O' | null;
@@ -22,12 +23,62 @@ const TicTacToeGame: React.FC = () => {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium'); // AI difficulty
+  const [cursorPosition, setCursorPosition] = useState<{ row: number; col: number }>({ row: 1, col: 1 });
+  const [gamepadConnected, setGamepadConnected] = useState(false);
+  const [previousGamepadState, setPreviousGamepadState] = useState<GamepadState | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchHighScore();
     }
   }, [user]);
+
+  // Gamepad support
+  useEffect(() => {
+    const cleanup = useGamepad((connected) => {
+      setGamepadConnected(connected);
+    });
+
+    return cleanup;
+  }, []);
+
+  // Gamepad polling
+  useEffect(() => {
+    if (!gamepadConnected) return;
+
+    const gameLoop = setInterval(() => {
+      const currentState = getGamepadState();
+      if (!currentState) return;
+
+      // D-Pad navigation
+      if (isButtonJustPressed('dpadUp', previousGamepadState, currentState)) {
+        setCursorPosition(prev => ({ ...prev, row: Math.max(0, prev.row - 1) }));
+      }
+      if (isButtonJustPressed('dpadDown', previousGamepadState, currentState)) {
+        setCursorPosition(prev => ({ ...prev, row: Math.min(2, prev.row + 1) }));
+      }
+      if (isButtonJustPressed('dpadLeft', previousGamepadState, currentState)) {
+        setCursorPosition(prev => ({ ...prev, col: Math.max(0, prev.col - 1) }));
+      }
+      if (isButtonJustPressed('dpadRight', previousGamepadState, currentState)) {
+        setCursorPosition(prev => ({ ...prev, col: Math.min(2, prev.col + 1) }));
+      }
+
+      // A button to make move
+      if (isButtonJustPressed('a', previousGamepadState, currentState)) {
+        handleClick(cursorPosition.row, cursorPosition.col);
+      }
+
+      // Start button to reset game
+      if (isButtonJustPressed('start', previousGamepadState, currentState)) {
+        resetGame();
+      }
+
+      setPreviousGamepadState(currentState);
+    }, 16); // ~60fps
+
+    return () => clearInterval(gameLoop);
+  }, [gamepadConnected, previousGamepadState, cursorPosition]);
 
   // Fetch high score from Supabase
   const fetchHighScore = async () => {
@@ -253,7 +304,14 @@ const TicTacToeGame: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center p-8 bg-white dark:bg-slate-800 rounded-lg shadow-lg max-w-md mx-auto">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-slate-100">Tic-Tac-Toe vs AI</h2>
+      <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-slate-100">
+        Tic-Tac-Toe vs AI {gamepadConnected && '🎮'}
+      </h2>
+      {gamepadConnected && (
+        <div className="mb-4 text-sm text-gray-600 dark:text-slate-400 text-center">
+          D-Pad: Move | A: Select | Start: New Game
+        </div>
+      )}
 
       {/* Difficulty selector */}
       <div className="mb-6 w-full">
@@ -272,26 +330,31 @@ const TicTacToeGame: React.FC = () => {
       {/* Board */}
       <div className="grid grid-cols-3 gap-2 mb-6">
         {board.map((row, ri) => (
-          row.map((cell, ci) => (
-            <button
-              key={`${ri}-${ci}`}
-              onClick={() => handleClick(ri, ci)}
-              className={`w-24 h-24 text-5xl font-bold border-4 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                cell === 'X'
-                  ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-600 dark:text-blue-300'
-                  : cell === 'O'
-                  ? 'bg-red-100 dark:bg-red-900 border-red-500 text-red-600 dark:text-red-300'
-                  : 'bg-gray-50 dark:bg-slate-700 border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
-              } ${
-                isGameOver || cell !== null || currentPlayer !== 'X'
-                  ? 'cursor-not-allowed opacity-60'
-                  : 'cursor-pointer hover:scale-105'
-              }`}
-              disabled={isGameOver || cell !== null || currentPlayer !== 'X'}
-            >
-              {cell}
-            </button>
-          ))
+          row.map((cell, ci) => {
+            const isCursor = gamepadConnected && cursorPosition.row === ri && cursorPosition.col === ci;
+            return (
+              <button
+                key={`${ri}-${ci}`}
+                onClick={() => handleClick(ri, ci)}
+                className={`w-24 h-24 text-5xl font-bold border-4 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                  cell === 'X'
+                    ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-600 dark:text-blue-300'
+                    : cell === 'O'
+                    ? 'bg-red-100 dark:bg-red-900 border-red-500 text-red-600 dark:text-red-300'
+                    : 'bg-gray-50 dark:bg-slate-700 border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
+                } ${
+                  isGameOver || cell !== null || currentPlayer !== 'X'
+                    ? 'cursor-not-allowed opacity-60'
+                    : 'cursor-pointer hover:scale-105'
+                } ${
+                  isCursor ? 'ring-4 ring-green-400' : ''
+                }`}
+                disabled={isGameOver || cell !== null || currentPlayer !== 'X'}
+              >
+                {cell}
+              </button>
+            );
+          })
         ))}
       </div>
 

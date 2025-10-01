@@ -12,6 +12,16 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   subscription_status TEXT DEFAULT 'inactive' CHECK (subscription_status IN ('active', 'inactive', 'trial', 'cancelled')),
   subscription_end_date TIMESTAMPTZ,
   favorite_pages TEXT[] DEFAULT ARRAY[]::TEXT[],
+  login_streak INTEGER DEFAULT 0,
+  last_login_date TIMESTAMPTZ,
+  longest_streak INTEGER DEFAULT 0,
+  total_logins INTEGER DEFAULT 0,
+  bio TEXT,
+  location TEXT,
+  website TEXT,
+  email_notifications BOOLEAN DEFAULT true,
+  weekly_reports BOOLEAN DEFAULT false,
+  marketing_emails BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id)
@@ -46,16 +56,21 @@ CREATE TABLE IF NOT EXISTS tool_requests (
 CREATE TABLE IF NOT EXISTS usage_tracking (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  action_type TEXT NOT NULL,
-  tool_name TEXT,
-  page_visited TEXT,
-  session_duration INTEGER,
+  tool_name TEXT NOT NULL,
+  tool_category TEXT,
+  session_id TEXT NOT NULL,
+  duration_seconds INTEGER,
+  tokens_used INTEGER,
+  api_calls INTEGER DEFAULT 1,
+  success BOOLEAN DEFAULT true,
+  error_message TEXT,
   metadata JSONB DEFAULT '{}'::JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_last_login_date ON user_profiles(last_login_date);
 CREATE INDEX IF NOT EXISTS idx_smechals_transactions_user_id ON smechals_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_smechals_transactions_created_at ON smechals_transactions(created_at);
 CREATE INDEX IF NOT EXISTS idx_tool_requests_user_id ON tool_requests(user_id);

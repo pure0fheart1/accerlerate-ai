@@ -159,8 +159,11 @@ import CryptoPricesTracker from './pages/CryptoPricesTracker';
 import BookmarksManager from './pages/BookmarksManager';
 import BottleCounter from './pages/BottleCounter';
 import GuidesInfo from './pages/GuidesInfo';
+import ClaudeCodeGuide from './pages/ClaudeCodeGuide';
 import Games from './pages/Games';
 import GemBooth from './pages/GemBooth';
+import MyGallery from './pages/MyGallery';
+import FitCheck from './pages/FitCheck';
 import { Logo } from './components/Logo';
 import UserProfileWidget from './components/UserProfileWidget';
 
@@ -168,7 +171,7 @@ import {
     SparklesIcon, BookOpenIcon, WandIcon, DocumentTextIcon, VideoCameraIcon,
     BriefcaseIcon, CodeBracketIcon, EnvelopeIcon, ShareIcon, CakeIcon, HeartIcon,
     GlobeAltIcon, PencilIcon, UserCircleIcon, LanguageIcon, ClipboardListIcon,
-    BrainIcon, NewspaperIcon, MegaphoneIcon, TagIcon, LightBulbIcon, DocumentCheckIcon,
+    BrainIcon, NewspaperIcon, MegaphoneIcon, TagIcon, LightBulbIcon, DocumentCheckIcon, ImageIcon,
     AcademicCapIcon, BoltIcon, TableCellsIcon, FaceSmileIcon, AtSymbolIcon,
     ChatBubbleBottomCenterTextIcon, ChartBarIcon, ScaleIcon, SpeakerWaveIcon, GiftIcon,
     PresentationChartLineIcon, MoonIcon, UsersIcon, MusicalNoteIcon, BuildingOfficeIcon,
@@ -284,6 +287,10 @@ export type Page =
     'games' |
     // GemBooth
     'gembooth' |
+    // My Gallery
+    'mygallery' |
+    // FitCheck
+    'fitcheck' |
     // Settings page
     'settings';
 
@@ -299,6 +306,7 @@ const navItems = [
         group: 'Core Tools',
         items: [
             { id: 'generator', label: 'Image Generator', icon: SparklesIcon },
+            { id: 'mygallery', label: 'My Gallery', icon: ImageIcon },
             { id: 'polisher', label: 'Prompt Polisher', icon: WandIcon },
             { id: 'video', label: 'Video Ideas', icon: VideoCameraIcon },
             { id: 'taskbuilder', label: 'AI Task Manager', icon: ClipboardListIcon },
@@ -514,6 +522,12 @@ const AppContent: React.FC = () => {
     const [activePage, setActivePage] = useState<Page>('generator');
     const [sharedPrompt, setSharedPrompt] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+        try {
+            const stored = localStorage.getItem('accelerate-collapsed-groups');
+            return stored ? new Set(JSON.parse(stored)) : new Set();
+        } catch { return new Set(); }
+    });
 
     // Debug logging
     useEffect(() => {
@@ -701,6 +715,19 @@ const AppContent: React.FC = () => {
         const newCollapsedState = !isCollapsed;
         setIsCollapsed(newCollapsedState);
         localStorage.setItem(SIDEBAR_COLLAPSED_KEY, JSON.stringify(newCollapsedState));
+    };
+
+    const toggleGroup = (groupName: string) => {
+        setCollapsedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(groupName)) {
+                next.delete(groupName);
+            } else {
+                next.add(groupName);
+            }
+            localStorage.setItem('accelerate-collapsed-groups', JSON.stringify([...next]));
+            return next;
+        });
     };
 
     const dynamicNavItems = useMemo(() => {
@@ -908,9 +935,12 @@ const AppContent: React.FC = () => {
             case 'cryptoprices': return <CryptoPricesTracker />;
             case 'bookmarksmanager': return <BookmarksManager />;
             case 'bottlecounter': return <BottleCounter />;
-            case 'guidesinfo': return <GuidesInfo />;
+            case 'guidesinfo': return <GuidesInfo onNavigate={setActivePage} />;
+            case 'claudecodeguide': return <ClaudeCodeGuide onNavigate={setActivePage} />;
             case 'games': return <Games />;
             case 'gembooth': return <GemBooth />;
+            case 'mygallery': return <MyGallery />;
+            case 'fitcheck': return <FitCheck />;
             case 'userdashboard': return <UserDashboard />;
             case 'settings': return <Settings shortcuts={shortcuts} updateShortcuts={updateShortcuts} />;
             default: return <ImageGenerator sharedPrompt={sharedPrompt} setSharedPrompt={setSharedPrompt} />;
@@ -972,18 +1002,34 @@ const AppContent: React.FC = () => {
                 <nav className="flex-grow overflow-y-auto -mr-2 pr-2 space-y-4">
                     {filteredNavItems.map(group => (
                         <div key={group.group}>
-                            {!isCollapsed && <h2 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-2">{group.group}</h2>}
-                            <ul className="space-y-1">
-                                {group.items.map(item => (
-                                    <li key={item.id} className="relative group/item">
-                                        <button
-                                            onClick={() => setActivePage(item.id as Page)}
-                                            className={`w-full flex items-center gap-3 text-left py-2 rounded-lg transition-colors text-sm font-medium ${isCollapsed ? 'px-2 justify-center' : 'px-2'} ${activePage === item.id ? 'bg-indigo-100 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-slate-100'}`}
-                                            title={item.label}
-                                        >
-                                            <item.icon className="h-5 w-5 flex-shrink-0" />
-                                            {!isCollapsed && <span className="pr-6 truncate">{item.label}</span>}
-                                        </button>
+                            {!isCollapsed && (
+                                <button
+                                    onClick={() => toggleGroup(group.group)}
+                                    className="w-full flex items-center justify-between text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-2 hover:text-gray-700 dark:hover:text-slate-300 transition-colors"
+                                >
+                                    <span>{group.group}</span>
+                                    <svg
+                                        className={`h-4 w-4 transition-transform ${collapsedGroups.has(group.group) ? '-rotate-90' : ''}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                            )}
+                            {(!collapsedGroups.has(group.group) || isCollapsed) && (
+                                <ul className="space-y-1">
+                                    {group.items.map(item => (
+                                        <li key={item.id} className="relative group/item">
+                                            <button
+                                                onClick={() => setActivePage(item.id as Page)}
+                                                className={`w-full flex items-center gap-3 text-left py-2 rounded-lg transition-colors text-sm font-medium ${isCollapsed ? 'px-2 justify-center' : 'px-2'} ${activePage === item.id ? 'bg-indigo-100 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-slate-100'}`}
+                                                title={item.label}
+                                            >
+                                                <item.icon className="h-5 w-5 flex-shrink-0" />
+                                                {!isCollapsed && <span className="pr-6 truncate">{item.label}</span>}
+                                            </button>
                                         {!isCollapsed && item.id !== 'settings' && (
                                             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                                                 {/* Hide Button for Members+ */}
@@ -1044,9 +1090,10 @@ const AppContent: React.FC = () => {
                                                 </button>
                                             </div>
                                         )}
-                                    </li>
-                                ))}
-                            </ul>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                     ))}
                 </nav>
@@ -1072,7 +1119,7 @@ const AppContent: React.FC = () => {
                                 { id: 'pg-1', label: 'Games', page: 'games' },
                                 { id: 'pg-3', label: 'GemBooth', page: 'gembooth' },
                                 { id: 'pg-4', label: 'Guides&Info', page: 'guidesinfo' },
-                                { id: 'pg-5', label: 'pg-5', page: 'generator' }
+                                { id: 'pg-5', label: 'FitCheck', page: 'fitcheck' }
                             ].map((pageItem, index) => (
                                 <button
                                     key={pageItem.id}

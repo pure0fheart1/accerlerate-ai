@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   UndoIcon, RedoIcon, DownloadIcon, EditIcon, XMarkIcon, CheckIcon,
-  PencilIcon, TrashIcon, CursorIcon, HandIcon, TypeIcon
+  PencilIcon, TrashIcon, CursorIcon, HandIcon, TypeIcon, ImageIcon
 } from '../components/icons';
 
 // ====================================================================================
@@ -575,9 +575,10 @@ const Whiteboard: React.FC = () => {
         ctx.lineJoin = 'round';
 
         // Handle eraser paths with destination-out composite mode
-        if (path.color === '#ERASER') {
+        if (path.color === '#ERASER' || path.tool === 'eraser') {
           ctx.globalCompositeOperation = 'destination-out';
           ctx.strokeStyle = 'rgba(0,0,0,1)';
+          ctx.lineWidth = path.strokeWidth;
         } else {
           ctx.globalCompositeOperation = 'source-over';
           ctx.strokeStyle = path.color;
@@ -607,6 +608,15 @@ const Whiteboard: React.FC = () => {
               drawHeart(ctx, startPoint, endPoint, path.color, path.strokeWidth, filled);
               break;
           }
+        } else if (path.tool === 'eraser') {
+          // Draw eraser path
+          ctx.lineWidth = path.strokeWidth;
+          ctx.beginPath();
+          ctx.moveTo(path.points[0].x, path.points[0].y);
+          for (let i = 1; i < path.points.length; i++) {
+            ctx.lineTo(path.points[i].x, path.points[i].y);
+          }
+          ctx.stroke();
         } else if (path.tool === 'spraycan') {
           // Draw spraycan dots
           path.points.forEach(point => {
@@ -825,8 +835,14 @@ const Whiteboard: React.FC = () => {
           else if (handle === 'rotate') interactionRef.current = { type: 'rotating' };
           else interactionRef.current = { type: 'resizing', handle };
 
-          if (e.detail === 2 && 'text' in obj) {
-            setIsEditingText(obj);
+          // Enable double-click for both text and image editing/resizing
+          if (e.detail === 2) {
+            if ('text' in obj) {
+              setIsEditingText(obj);
+            } else if ('height' in obj) {
+              // Image is now in resize mode - user can drag handles to resize
+              // The object is already selected, so handles are visible
+            }
           }
         }
         break;
@@ -1283,6 +1299,33 @@ const Whiteboard: React.FC = () => {
     setIsExporting(false);
   };
 
+  const handleExportToGallery = async () => {
+    setIsExporting(true);
+    const dataUrl = await exportCanvasAsImage();
+    if (dataUrl) {
+      try {
+        const GALLERY_STORAGE_KEY = 'ai-gallery-images';
+        const stored = localStorage.getItem(GALLERY_STORAGE_KEY);
+        const existingImages = stored ? JSON.parse(stored) : [];
+
+        const newImage = {
+          id: `whiteboard-${Date.now()}`,
+          url: dataUrl,
+          timestamp: Date.now(),
+          source: 'editor' as const
+        };
+
+        existingImages.push(newImage);
+        localStorage.setItem(GALLERY_STORAGE_KEY, JSON.stringify(existingImages));
+        alert('Whiteboard exported to gallery successfully!');
+      } catch (error) {
+        console.error('Failed to save to gallery:', error);
+        alert('Failed to save to gallery. Please try again.');
+      }
+    }
+    setIsExporting(false);
+  };
+
   const handleClear = () => {
     recordNewState({
       paths: [], images: [], textObjects: [],
@@ -1734,6 +1777,15 @@ const Whiteboard: React.FC = () => {
           >
             <DownloadIcon className="h-4 w-4" />
             {isExporting ? 'Exporting...' : 'Export as Image'}
+          </button>
+
+          <button
+            onClick={handleExportToGallery}
+            disabled={isExporting}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md transition-colors bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium"
+          >
+            <ImageIcon className="h-4 w-4" />
+            {isExporting ? 'Exporting...' : 'Export to Gallery'}
           </button>
 
           <button

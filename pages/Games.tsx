@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PongGame from '../games/PongGame';
 import ChessGame from '../games/ChessGame';
 import WeaponDodgeGame from '../games/WeaponDodgeGame';
 import TicTacToeGame from '../games/TicTacToeGame';
+import SudokuGame from '../games/SudokuGame';
+import { getGamepadState, useGamepad, isButtonJustPressed, type GamepadState } from '../lib/gamepadUtils';
 
 interface Game {
   id: string;
@@ -24,6 +26,10 @@ const Games: React.FC = () => {
   const [isPlayingChess, setIsPlayingChess] = useState(false);
   const [isPlayingWeaponDodge, setIsPlayingWeaponDodge] = useState(false);
   const [isPlayingTicTacToe, setIsPlayingTicTacToe] = useState(false);
+  const [isPlayingSudoku, setIsPlayingSudoku] = useState(false);
+  const [selectedGameIndex, setSelectedGameIndex] = useState(0);
+  const [gamepadConnected, setGamepadConnected] = useState(false);
+  const [previousGamepadState, setPreviousGamepadState] = useState<GamepadState | null>(null);
 
   const games: Game[] = [
     {
@@ -69,6 +75,17 @@ const Games: React.FC = () => {
       players: '1 vs AI',
       image: '⭕',
       status: 'available'
+    },
+    {
+      id: 'sudoku',
+      title: 'Sudoku',
+      description: 'Classic brain-teasing number puzzle! Fill the 9x9 grid with digits 1-9. Each row, column, and 3x3 box must contain all numbers. Features hundreds of levels with difficulty progression from Easy to Expert!',
+      category: 'puzzle',
+      difficulty: 'medium',
+      playTime: '10-30 min',
+      players: '1 Player',
+      image: '🧩',
+      status: 'available'
     }
   ];
 
@@ -87,6 +104,79 @@ const Games: React.FC = () => {
                          game.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  // Gamepad support
+  useEffect(() => {
+    const cleanup = useGamepad((connected) => {
+      setGamepadConnected(connected);
+    });
+
+    return cleanup;
+  }, []);
+
+  // Gamepad polling
+  useEffect(() => {
+    if (!gamepadConnected) return;
+
+    const gameLoop = setInterval(() => {
+      const currentState = getGamepadState();
+      if (!currentState) return;
+
+      const cols = 4; // 4 columns in XL grid
+      const currentRow = Math.floor(selectedGameIndex / cols);
+      const currentCol = selectedGameIndex % cols;
+
+      // D-Pad navigation through games
+      if (isButtonJustPressed('dpadLeft', previousGamepadState, currentState)) {
+        if (currentCol > 0) {
+          setSelectedGameIndex(prev => prev - 1);
+        }
+      }
+      if (isButtonJustPressed('dpadRight', previousGamepadState, currentState)) {
+        const newIndex = selectedGameIndex + 1;
+        if (newIndex < filteredGames.length && currentCol < cols - 1) {
+          setSelectedGameIndex(newIndex);
+        }
+      }
+      if (isButtonJustPressed('dpadUp', previousGamepadState, currentState)) {
+        const newIndex = selectedGameIndex - cols;
+        if (newIndex >= 0) {
+          setSelectedGameIndex(newIndex);
+        }
+      }
+      if (isButtonJustPressed('dpadDown', previousGamepadState, currentState)) {
+        const newIndex = selectedGameIndex + cols;
+        if (newIndex < filteredGames.length) {
+          setSelectedGameIndex(newIndex);
+        }
+      }
+
+      // A button to play selected game
+      if (isButtonJustPressed('a', previousGamepadState, currentState)) {
+        if (filteredGames[selectedGameIndex]) {
+          handlePlayGame(filteredGames[selectedGameIndex]);
+        }
+      }
+
+      // B button to show info
+      if (isButtonJustPressed('b', previousGamepadState, currentState)) {
+        if (filteredGames[selectedGameIndex]) {
+          setSelectedGame(filteredGames[selectedGameIndex]);
+        }
+      }
+
+      // Back button to close modal
+      if (isButtonJustPressed('back', previousGamepadState, currentState)) {
+        if (selectedGame) {
+          setSelectedGame(null);
+        }
+      }
+
+      setPreviousGamepadState(currentState);
+    }, 16); // ~60fps
+
+    return () => clearInterval(gameLoop);
+  }, [gamepadConnected, previousGamepadState, selectedGameIndex, filteredGames, selectedGame]);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -119,6 +209,9 @@ const Games: React.FC = () => {
         setSelectedGame(null);
       } else if (game.id === 'tictactoe') {
         setIsPlayingTicTacToe(true);
+        setSelectedGame(null);
+      } else if (game.id === 'sudoku') {
+        setIsPlayingSudoku(true);
         setSelectedGame(null);
       } else {
         alert(`Starting ${game.title}... (Game integration would go here)`);
@@ -188,17 +281,37 @@ const Games: React.FC = () => {
     );
   }
 
+  // Show Sudoku game if playing
+  if (isPlayingSudoku) {
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setIsPlayingSudoku(false)}
+          className="absolute top-4 left-4 z-50 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all duration-200 font-medium shadow-lg"
+        >
+          ← Back to Games
+        </button>
+        <SudokuGame />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-900 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            🎮 Game Center
+            🎮 Game Center {gamepadConnected && '🎮'}
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Explore our collection of engaging games designed to entertain, educate, and challenge your mind.
           </p>
+          {gamepadConnected && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              D-Pad: Navigate | A: Play | B: Info | Back: Close
+            </p>
+          )}
         </div>
 
         {/* Search and Filters */}
@@ -232,10 +345,12 @@ const Games: React.FC = () => {
 
         {/* Games Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredGames.map((game) => (
+          {filteredGames.map((game, index) => (
             <div
               key={game.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 dark:border-gray-700"
+              className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200 dark:border-gray-700 ${
+                gamepadConnected && selectedGameIndex === index ? 'ring-4 ring-green-400 scale-105' : ''
+              }`}
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { getGamepadState, useGamepad, isButtonJustPressed, type GamepadState } from '../lib/gamepadUtils';
 
 type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
 type PieceColor = 'white' | 'black';
@@ -36,6 +37,62 @@ const ChessGame: React.FC = () => {
     white: [],
     black: []
   });
+  const [cursorPosition, setCursorPosition] = useState<Position>({ row: 7, col: 4 }); // Start at white king
+  const [gamepadConnected, setGamepadConnected] = useState(false);
+  const [previousGamepadState, setPreviousGamepadState] = useState<GamepadState | null>(null);
+
+  // Gamepad support
+  useEffect(() => {
+    const cleanup = useGamepad((connected) => {
+      setGamepadConnected(connected);
+    });
+
+    return cleanup;
+  }, []);
+
+  // Gamepad polling
+  useEffect(() => {
+    if (!gamepadConnected) return;
+
+    const gameLoop = setInterval(() => {
+      const currentState = getGamepadState();
+      if (!currentState) return;
+
+      // D-Pad navigation
+      if (isButtonJustPressed('dpadUp', previousGamepadState, currentState)) {
+        setCursorPosition(prev => ({ ...prev, row: Math.max(0, prev.row - 1) }));
+      }
+      if (isButtonJustPressed('dpadDown', previousGamepadState, currentState)) {
+        setCursorPosition(prev => ({ ...prev, row: Math.min(7, prev.row + 1) }));
+      }
+      if (isButtonJustPressed('dpadLeft', previousGamepadState, currentState)) {
+        setCursorPosition(prev => ({ ...prev, col: Math.max(0, prev.col - 1) }));
+      }
+      if (isButtonJustPressed('dpadRight', previousGamepadState, currentState)) {
+        setCursorPosition(prev => ({ ...prev, col: Math.min(7, prev.col + 1) }));
+      }
+
+      // A button to select/move
+      if (isButtonJustPressed('a', previousGamepadState, currentState)) {
+        handleSquareClick(cursorPosition.row, cursorPosition.col);
+      }
+
+      // B button to deselect
+      if (isButtonJustPressed('b', previousGamepadState, currentState)) {
+        setSelectedSquare(null);
+        setValidMoves([]);
+      }
+
+      // Start button to reset game
+      if (isButtonJustPressed('start', previousGamepadState, currentState)) {
+        resetGame();
+      }
+
+      setPreviousGamepadState(currentState);
+    }, 16); // ~60fps
+
+    return () => clearInterval(gameLoop);
+  }, [gamepadConnected, previousGamepadState, cursorPosition]);
 
   // Initialize chess board with starting positions
   function initializeBoard(): (Piece | null)[][] {
@@ -450,18 +507,18 @@ const ChessGame: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-indigo-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 flex items-center justify-center p-4">
       <div className="max-w-7xl w-full">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Game Area */}
           <div className="lg:col-span-2">
             <div className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
               {/* Header */}
-              <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6">
+              <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h1 className="text-4xl font-bold text-white mb-2">♔ Chess</h1>
-                    <p className="text-purple-100">
+                    <h1 className="text-4xl font-bold text-white mb-2">♔ Chess {gamepadConnected && '🎮'}</h1>
+                    <p className="text-gray-300">
                       {isCheckmate
                         ? `Checkmate! ${currentTurn === 'white' ? 'Black' : 'White'} wins!`
                         : isStalemate
@@ -471,12 +528,19 @@ const ChessGame: React.FC = () => {
                         : `${currentTurn === 'white' ? 'White' : 'Black'}'s turn`}
                     </p>
                   </div>
-                  <button
-                    onClick={resetGame}
-                    className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-200 font-medium"
-                  >
-                    New Game
-                  </button>
+                  <div className="flex gap-2 items-center">
+                    {gamepadConnected && (
+                      <div className="text-white/80 text-sm">
+                        D-Pad: Move | A: Select | B: Cancel | Start: New Game
+                      </div>
+                    )}
+                    <button
+                      onClick={resetGame}
+                      className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-200 font-medium"
+                    >
+                      New Game
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -493,21 +557,38 @@ const ChessGame: React.FC = () => {
                           (moveHistory[moveHistory.length - 1].from.row === rowIndex && moveHistory[moveHistory.length - 1].from.col === colIndex) ||
                           (moveHistory[moveHistory.length - 1].to.row === rowIndex && moveHistory[moveHistory.length - 1].to.col === colIndex)
                         );
+                        const isCursor = gamepadConnected && cursorPosition.row === rowIndex && cursorPosition.col === colIndex;
 
                         return (
                           <div
                             key={colIndex}
                             onClick={() => handleSquareClick(rowIndex, colIndex)}
                             className={`
-                              w-16 h-16 flex items-center justify-center text-5xl cursor-pointer relative
+                              w-16 h-16 flex items-center justify-center text-6xl cursor-pointer relative
                               transition-all duration-150
                               ${isLight ? 'bg-amber-100' : 'bg-amber-700'}
                               ${isSelected ? 'ring-4 ring-blue-500 ring-inset' : ''}
                               ${isLastMove ? 'bg-yellow-300 bg-opacity-50' : ''}
+                              ${isCursor ? 'ring-4 ring-green-400 ring-inset' : ''}
                               hover:brightness-110
                             `}
                           >
-                            {piece && getPieceSymbol(piece)}
+                            {piece && (
+                              <span
+                                className={`font-bold ${
+                                  piece.color === 'white'
+                                    ? 'text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]'
+                                    : 'text-gray-900 drop-shadow-[0_2px_3px_rgba(255,255,255,0.4)]'
+                                }`}
+                                style={{
+                                  filter: piece.color === 'white'
+                                    ? 'brightness(1.15) contrast(1.2)'
+                                    : 'brightness(0.3) contrast(1.3)'
+                                }}
+                              >
+                                {getPieceSymbol(piece)}
+                              </span>
+                            )}
                             {isValidMove && (
                               <div className={`absolute inset-0 flex items-center justify-center pointer-events-none`}>
                                 <div className={`rounded-full ${piece ? 'w-14 h-14 border-4 border-green-500' : 'w-4 h-4 bg-green-500'}`} />
@@ -537,7 +618,7 @@ const ChessGame: React.FC = () => {
                       key={index}
                       className="bg-gray-700 rounded-lg p-3 text-white"
                     >
-                      <span className="font-bold text-purple-400">
+                      <span className="font-bold text-gray-400">
                         {Math.floor(index / 2) + 1}.
                         {index % 2 === 0 ? ' ' : '... '}
                       </span>
@@ -580,18 +661,34 @@ const ChessGame: React.FC = () => {
         {/* Promotion Modal */}
         {promotionSquare && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 rounded-xl shadow-2xl p-8 border-4 border-purple-500">
+            <div className="bg-gray-800 rounded-xl shadow-2xl p-8 border-4 border-gray-600">
               <h3 className="text-2xl font-bold text-white mb-6 text-center">Choose Promotion</h3>
               <div className="flex gap-4">
-                {(['queen', 'rook', 'bishop', 'knight'] as PieceType[]).map(type => (
-                  <button
-                    key={type}
-                    onClick={() => handlePromotion(type)}
-                    className="w-20 h-20 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center justify-center text-6xl transition-all duration-200"
-                  >
-                    {getPieceSymbol({ type, color: currentTurn === 'white' ? 'black' : 'white' })}
-                  </button>
-                ))}
+                {(['queen', 'rook', 'bishop', 'knight'] as PieceType[]).map(type => {
+                  const piece = { type, color: currentTurn === 'white' ? 'black' : 'white' } as Piece;
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => handlePromotion(type)}
+                      className="w-20 h-20 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center justify-center transition-all duration-200"
+                    >
+                      <span
+                        className={`text-6xl font-bold ${
+                          piece.color === 'white'
+                            ? 'text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]'
+                            : 'text-gray-900 drop-shadow-[0_2px_3px_rgba(255,255,255,0.4)]'
+                        }`}
+                        style={{
+                          filter: piece.color === 'white'
+                            ? 'brightness(1.15) contrast(1.2)'
+                            : 'brightness(0.3) contrast(1.3)'
+                        }}
+                      >
+                        {getPieceSymbol(piece)}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
